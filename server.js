@@ -7,6 +7,9 @@ const UserRoutes = require("./routes/UserRoutes");
 const OrderRoutes = require("./routes/OrderRoutes");
 const ServiceRoutes = require("./routes/ServiceRoutes");
 const RequestRoutes = require("./routes/RequestRoutes");
+const WorkerRoutes = require("./routes/WorkerRoutes");
+const FmsAdminRoutes = require("./routes/FmsAdminRoutes");
+const ComplaintRoutes = require("./routes/ComplaintRoutes");
 
 const app = express();
 
@@ -29,5 +32,8 @@ app.use("/users", UserRoutes);
 app.use("/orders", OrderRoutes);
 app.use("/services", ServiceRoutes);
 app.use("/request", RequestRoutes);
-const PORT = process.env.PORT || 5000;
+app.use("/worker", WorkerRoutes);
+app.use("/admin", FmsAdminRoutes);
+app.use("/complaint", ComplaintRoutes);
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

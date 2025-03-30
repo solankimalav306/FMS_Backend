@@ -25,4 +25,28 @@ const getPendingOrders = async (req, res) => {
     }
 };
 
-module.exports = { getPendingOrders };
+const fetchOrderHistory = async (req, res) => {
+    console.log("🔎 Checking session AdminID:", req.session.AdminID);
+
+    if (!req.session.AdminID) {
+        return res.status(401).json({ error: "Unauthorized. Please log in." });
+    }
+
+    try {
+        const { data: orders, error } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("collected", true);
+
+        if (error) {
+            return res.status(500).json({ error: "Error fetching orders" });
+        }
+
+        res.json({ orders });
+    } catch (err) {
+        console.error("Error fetching orders:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+module.exports = { getPendingOrders, fetchOrderHistory };
