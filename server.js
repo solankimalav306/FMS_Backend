@@ -18,7 +18,7 @@ app.use(session({
     secret: "jhaadupocha123",
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: true }
+    cookie: { secure: false, httpOnly: true }
 }));
 
 app.use(express.json()); // JSON middleware AFTER session
