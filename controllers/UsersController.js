@@ -24,8 +24,6 @@ const loginUser = async (req, res) => {
         }
         
         req.session.userID = user.user_id;
-        req.session.userroomno = user.roomno;
-        req.session.userbuilding = user.building;
         console.log("✅ Session UserID Set:", req.session.userID);
         console.log("User Default Room Number:", req.session.userroomno);
         console.log("User Default Building:", req.session.userbuilding);
@@ -38,5 +36,29 @@ const loginUser = async (req, res) => {
     }
 };
 
+const fetchDefaultAddress = async (req, res) => {
+    const { User_ID } = req.body;
 
-module.exports = { loginUser };
+    if (!User_ID) {
+        return res.status(400).json({ error: "User_ID not found" });
+    }
+
+    try {
+        const { data: user, error } = await supabase
+            .from("users")
+            .select("building, roomno")
+            .eq("user_id", User_ID)
+            .single();
+
+        if (error || !user) {
+            return res.status(401).json({ error: "Invalid User_ID" });
+        }
+
+        res.json({ message: "User Default Address Retrived", user: user });
+    } catch (err) {
+        console.error("Login error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+module.exports = { loginUser, fetchDefaultAddress};
