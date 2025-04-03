@@ -1,17 +1,12 @@
 const supabase = require("../config/supabaseClient");
 
 const fetchPreviousBookings = async (req, res) => {
-    console.log("🔎 Checking session UserID:", req.session.userID);
-
-    if (!req.session.userID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
-
+    const { User_ID } = req.body;
     try {
         const { data: bookings, error } = await supabase
             .from("requests")
             .select("*")
-            .eq("user_id", req.session.userID)
+            .eq("user_id", User_ID)
             .eq("is_completed", true);
 
         if (error) {
@@ -26,17 +21,13 @@ const fetchPreviousBookings = async (req, res) => {
 };
 
 const fetchOntimeBookings = async (req, res) => {
-    console.log("🔎 Checking session UserID:", req.session.userID);
-
-    if (!req.session.userID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
+    const { User_ID } = req.body;
 
     try {
         const { data: bookings, error } = await supabase
             .from("requests")
             .select("*")
-            .eq("user_id", req.session.userID)
+            .eq("user_id", User_ID)
             .eq("is_completed", false);
 
         if (error) {
@@ -51,12 +42,6 @@ const fetchOntimeBookings = async (req, res) => {
 };
 
 const fetchActiveRequests = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
-
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
-
     try {
         const { data: requests, error } = await supabase
             .from("requests")
@@ -75,12 +60,6 @@ const fetchActiveRequests = async (req, res) => {
 };
 
 const fetchRequestsHistory = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
-
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
-
     try {
         const { data: requests, error } = await supabase
             .from("requests")
