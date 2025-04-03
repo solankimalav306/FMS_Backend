@@ -8,6 +8,7 @@ const fetchPreviousBookings = async (req, res) => {
             .select(`
                 is_completed,
                 feedback,
+                rating,
                 worker!inner(name),
                 services!inner(service_type)
             `)
@@ -27,7 +28,8 @@ const fetchPreviousBookings = async (req, res) => {
             service: booking.services?.service_type || "Unknown",
             name: booking.worker?.name || "Unknown",
             is_completed: booking.is_completed,
-            feedback: booking.feedback || "NULL"
+            feedback: booking.feedback || "NULL",
+            rating: booking.rating || "NULL"
         }));
 
         res.json({ bookings: formattedBookings });
