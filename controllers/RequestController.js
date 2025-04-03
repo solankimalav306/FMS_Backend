@@ -38,13 +38,13 @@ const fetchPreviousBookings = async (req, res) => {
             return res.status(500).json({ error: "Error fetching bookings" });
         }
 
-        // // Formatting the response
-        // const formattedBookings = bookings.map(booking => ({
-        //     service: booking.Services?.Service_Type || "Unknown",
-        //     name: booking.Worker?.Name || "Unknown",
-        //     is_completed: booking.is_completed,
-        //     feedback: booking.feedback || "NULL"
-        // }));
+        // Formatting the response
+        const formattedBookings = bookings.map(booking => ({
+            service: booking.Services?.Service_Type || "Unknown",
+            name: booking.Worker?.Name || "Unknown",
+            is_completed: booking.is_completed,
+            feedback: booking.feedback || "NULL"
+        }));
 
         res.json({ bookings: formattedBookings });
     } catch (err) {
