@@ -10,7 +10,8 @@ const fetchPreviousBookings = async (req, res) => {
                 feedback,
                 rating,
                 worker!inner(name),
-                services!inner(service_type)
+                services!inner(service_type),
+                request_time
             `)
             .eq("user_id", User_ID)
             .eq("is_completed", true);
@@ -29,7 +30,8 @@ const fetchPreviousBookings = async (req, res) => {
             name: booking.worker?.name || "Unknown",
             is_completed: booking.is_completed,
             feedback: booking.feedback || "NULL",
-            rating: booking.rating || "NULL"
+            rating: booking.rating || "NULL",
+            time:booking.request_time
         }));
 
         res.json({ bookings: formattedBookings });
@@ -96,4 +98,36 @@ const fetchRequestsHistory = async (req, res) => {
     }
 };
 
-module.exports = { fetchPreviousBookings, fetchOntimeBookings, fetchActiveRequests, fetchRequestsHistory };
+const updatefeedback = async (req, res) => {
+    const { User_ID, request_time, feedback, rating } = req.body;
+
+    if (!User_ID || !request_time || !feedback || rating === undefined) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from("requests")
+            .update({ feedback, rating })
+            .eq("user_id", User_ID)
+            .eq("request_time", request_time)
+            .select();
+
+        if (error) {
+            console.error("Supabase error:", error);
+            return res.status(500).json({ error: "Error updating feedback" });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ error: "No matching request found" });
+        }
+
+        res.json({ message: "Feedback updated successfully", updatedRequest: data[0] });
+    } catch (err) {
+        console.error("Error updating feedback:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+module.exports = { fetchPreviousBookings, fetchOntimeBookings, fetchActiveRequests, fetchRequestsHistory, updatefeedback };
