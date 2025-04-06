@@ -132,10 +132,22 @@ const updatefeedback = async (req, res) => {
 const newUserRequest = async (req, res) => {
     const { user_id, service, location } = req.body;
     const request_time = new Date().toISOString().slice(0, 19); // "YYYY-MM-DDTHH:mm:ss"
-  
+    
+    // if (!user_id || !service || !location) {
+    //   return res.status(400).json({ error: "Missing required fields" });
+    // }
     if (!user_id || !service || !location) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
+        console.error("🛑 Missing required fields:", { user_id, service, location });
+        return res.status(400).json({
+          error: "Missing required fields",
+          received: {
+            user_id: user_id || null,
+            service: service || null,
+            location: location || null,
+          },
+        });
+      }
+      
   
     const [room_no, building] = location.split(",").map(s => s.trim());
   
