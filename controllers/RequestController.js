@@ -47,7 +47,10 @@ const fetchOntimeBookings = async (req, res) => {
     try {
         const { data: bookings, error } = await supabase
             .from("requests")
-            .select("*")
+            .select(`
+                services:service_id (service_type),
+                worker:worker_id (name)
+            `)
             .eq("user_id", User_ID)
             .eq("is_completed", false);
 
@@ -55,12 +58,19 @@ const fetchOntimeBookings = async (req, res) => {
             return res.status(500).json({ error: "Error fetching bookings" });
         }
 
-        res.json({ bookings });
+        // Optional: format output to only return clean names
+        const formattedBookings = bookings.map(b => ({
+            worker_name: b.worker?.name,
+            service_name: b.services?.service_type
+        }));
+
+        res.json({ bookings: formattedBookings });
     } catch (err) {
         console.error("Error fetching bookings:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 const fetchActiveRequests = async (req, res) => {
     try {
@@ -133,22 +143,9 @@ const newUserRequest = async (req, res) => {
     const { user_id, service, location } = req.body;
     const request_time = new Date().toISOString().slice(0, 19); // "YYYY-MM-DDTHH:mm:ss"
     
-    // if (!user_id || !service || !location) {
-    //   return res.status(400).json({ error: "Missing required fields" });
-    // }
     if (!user_id || !service || !location) {
-        console.error("🛑 Missing required fields:", { user_id, service, location });
-        return res.status(400).json({
-          error: "Missing required fields",
-          received: {
-            user_id: user_id || null,
-            service: service || null,
-            location: location || null,
-          },
-        });
-      }
-      
-  
+      return res.status(400).json({ error: "Missing required fields" });
+    }
     const [room_no, building] = location.split(",").map(s => s.trim());
   
     try {
