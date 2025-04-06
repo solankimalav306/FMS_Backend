@@ -129,5 +129,75 @@ const updatefeedback = async (req, res) => {
     }
 };
 
+const newUserRequest = async (req, res) => {
+    const { user_id, service, location } = req.body;
+    const request_time = new Date().toISOString().slice(0, 19); // "YYYY-MM-DDTHH:mm:ss"
+  
+    if (!user_id || !service || !location) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+  
+    const [room_no, building] = location.split(",").map(s => s.trim());
+  
+    try {
+      // 1. Get service_id from service name
+      const { data: serviceData, error: serviceError } = await supabase
+        .from("services")
+        .select("service_id")
+        .eq("service_type", service)
+        .single();
+  
+      if (serviceError || !serviceData) {
+        return res.status(404).json({ error: "Service not found" });
+      }
+  
+      const service_id = serviceData.service_id;
+  
+      // 2. Get all workers assigned to the same building and service
+      const { data: assigns, error: assignError } = await supabase
+        .from("assigns")
+        .select("worker_id")
+        .eq("assigned_location", building)
+        .eq("service_id", service_id);
+  
+      if (assignError || !assigns || assigns.length === 0) {
+        return res.status(404).json({ error: "No workers assigned to this service/building" });
+      }
+  
+      // 3. Randomly pick one worker
+      const randomWorker = assigns[Math.floor(Math.random() * assigns.length)].worker_id;
+  
+      // 4. Insert into requests
+      const { data: insertData, error: insertError } = await supabase
+        .from("requests")
+        .insert([
+          {
+            user_id,
+            service_id,
+            room_no,
+            building,
+            request_time,
+            worker_id: randomWorker,
+            is_completed: false,
+            feedback: null,
+            rating: null
+          }
+        ])
+        .select();
+  
+      if (insertError) {
+        return res.status(500).json({ error: "Failed to insert request", details: insertError });
+      }
+  
+      res.status(201).json({ message: "Request created successfully", request: insertData[0] });
+  
+    } catch (err) {
+      console.error("Error creating request:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+  
+  
 
-module.exports = { fetchPreviousBookings, fetchOntimeBookings, fetchActiveRequests, fetchRequestsHistory, updatefeedback };
+
+module.exports = { fetchPreviousBookings, fetchOntimeBookings, fetchActiveRequests, fetchRequestsHistory, updatefeedback, newUserRequest };
