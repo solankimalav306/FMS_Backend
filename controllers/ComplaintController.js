@@ -1,12 +1,6 @@
 const supabase = require("../config/supabaseClient");
 
 const fetchActiveComplaints = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
-
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
-
     try {
         const { data: complaints, error } = await supabase
             .from("files")
