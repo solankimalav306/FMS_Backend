@@ -15,26 +15,26 @@ const app = express();
 
 // 🛠️ Middleware Order Matters!
 app.use(session({
-    secret: "jhaadupocha123",
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false, httpOnly: true }
+  secret: "jhaadupocha123",
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false, httpOnly: true }
 }));
 
 app.use(express.json()); // JSON middleware AFTER session
 app.use(cors());
 
 app.get("/", (req, res) => {
-    res.send("Node.js + Supabase Backend is Running 🚀");
+  res.send("Node.js + Supabase Backend is Running 🚀");
 });
 
 app.get("/sessionUserID", (req, res) => {
-    if (req.session.userID) {
-      res.json({ userID: req.session.userID });
-    } else {
-      res.json({ error: "No session found" });
-    }
-  });
+  if (req.session.userID) {
+    res.json({ userID: req.session.userID });
+  } else {
+    res.json({ error: "No session found" });
+  }
+});
 
 app.use("/users", UserRoutes);
 app.use("/orders", OrderRoutes);
