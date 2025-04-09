@@ -524,6 +524,41 @@ const updateWorkerData = async (req, res) => {
     }
 };
 
+const updateOrderStatus = async (req, res) => {
+    console.log("🔎 Checking session AdminID:", req.session.AdminID);
+
+    if (!req.session.AdminID) {
+        return res.status(401).json({ error: "Unauthorized. Please log in." });
+    }
+
+    try {
+        const { order_id, collected } = req.body;
+
+        if (!order_id || !collected) {
+            return res.status(400).json({ error: "order_id and collected status are required" });
+        }
+
+        const { data, error } = await supabase
+            .from("orders")
+            .update({ collected })
+            .eq("order_id", order_id)
+            .select(); 
+
+        if (error) {
+            return res.status(401).json({ error: "Error updating order details" });
+        }
+
+        if (data.length === 0) {
+            return res.status(404).json({ error: "Order not found" });
+        }
+
+        res.json({ message: "Order details updated successfully", worker: data });
+    } catch (err) {
+        console.error("Update error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 const resolveComplaint = async (req, res) => {
     console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
@@ -596,4 +631,5 @@ const completeRequest = async (req, res) => {
 
 
 
-module.exports = { loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, resolveComplaint, completeRequest };
+
+module.exports = { loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
