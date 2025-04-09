@@ -81,6 +81,124 @@ const fetchEmployees = async (req, res) => {
     }
 };
 
+const fetchActiveComplaints = async (req, res) => {
+    console.log("🔎 Checking session AdminID:", req.session.AdminID);
+
+    if (!req.session.AdminID) {
+        return res.status(401).json({ error: "Unauthorized. Please log in." });
+    }
+
+    try {
+        const { data: complaints, error } = await supabase
+            .from("files")
+            .select("*")
+            .eq("is_resolved", false);
+
+        if (error) {
+            return res.status(500).json({ error: "Error fetching complaints" });
+        }
+
+        res.json({ complaints });
+    } catch (err) {
+        console.error("Error fetching complaints:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+const fetchRequestHistory = async (req, res) => {
+    console.log("🔎 Checking session AdminID:", req.session.AdminID);
+
+    if (!req.session.AdminID) {
+        return res.status(401).json({ error: "Unauthorized. Please log in." });
+    }
+
+    try {
+        const { data: requests, error } = await supabase
+            .from("requests")
+            .select("*")
+            .or("is_completed.eq.true,is_cancelled.eq.true");
+
+        if (error) {
+            return res.status(500).json({ error: "Error fetching requests" });
+        }
+
+        res.json({ requests });
+    } catch (err) {
+        console.error("Error fetching requests:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+const assignService = async (req, res) => {
+    console.log("🔎 Checking session AdminID:", req.session.AdminID);
+
+    if (!req.session.AdminID) {
+        return res.status(401).json({ error: "Unauthorized. Please log in." });
+    }
+
+    const { worker_id, assigned_location } = req.body;
+
+    if (!worker_id || !assigned_location) {
+        return res.status(400).json({ error: "Worker id and assigned location is required" });
+    }
+
+    try {
+        const { data: workerData, error: workerError } = await supabase
+            .from('worker')
+            .select('assigned_service')
+            .eq('worker_id', worker_id)
+            .single();
+
+        if (workerError || !workerData) {
+            return res.status(500).json({ error: "Error fetching worker's assigned service" });
+        }
+
+        const assignedService = workerData.assigned_service;
+
+        const { data: serviceData, error: serviceError } = await supabase
+            .from('services')
+            .select('service_id')
+            .eq('service_type', assignedService)
+            .single();
+
+        if (serviceError || !serviceData) {
+            return res.status(500).json({ error: "Error fetching service_id" });
+        }
+
+        const service_id = serviceData.service_id;
+        const admin_id = req.session.AdminID;
+        const assigned_time = new Date().toISOString(); 
+
+        const { data: insertData, error: insertError } = await supabase
+            .from('assigns')
+            .insert([
+                {
+                    service_id,
+                    admin_id,
+                    worker_id,
+                    assigned_time,
+                    assigned_location
+                }
+            ])
+            .select(); 
+
+        if (insertError) {
+            console.error("Error inserting into assigns:", insertError);
+            return res.status(500).json({ error: "Error assigning service" });
+        }
+
+        res.json({
+            message: "Service assigned successfully",
+            insertedData: insertData
+        });
+    } catch (err) {
+        console.error("Error assigning service:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
 const addService = async (req, res) => {
     console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
@@ -336,7 +454,7 @@ const removeService = async (req, res) => {
     }
 };
 
-const updateUserLocation = async (req, res) => {
+const updateUserData = async (req, res) => {
     console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
     if (!req.session.AdminID) {
@@ -344,19 +462,15 @@ const updateUserLocation = async (req, res) => {
     }
 
     try {
-        const { user_id, building, roomno } = req.body;
+        const { user_id, username, email, building, roomno } = req.body;
 
-        if (!user_id) {
-            return res.status(400).json({ error: "user_id is required" });
-        }
-
-        if (building === undefined && roomno === undefined) {
-            return res.status(400).json({ error: "At least one of building or roomno must be provided" });
+        if (!user_id || !username || !email) {
+            return res.status(400).json({ error: "user_id, username and email are required" });
         }
 
         const { data, error } = await supabase
             .from("users")
-            .update({ building, roomno })
+            .update({ username, email, building, roomno })
             .eq("user_id", user_id)
             .select(); 
 
@@ -375,7 +489,7 @@ const updateUserLocation = async (req, res) => {
     }
 };
 
-const updateWorkerRole = async (req, res) => {
+const updateWorkerData = async (req, res) => {
     console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
     if (!req.session.AdminID) {
@@ -383,27 +497,27 @@ const updateWorkerRole = async (req, res) => {
     }
 
     try {
-        const { worker_id, assigned_role } = req.body;
+        const { worker_id, name, phone_no, assigned_service, date_of_joining } = req.body;
 
-        if (!worker_id || !assigned_role) {
-            return res.status(400).json({ error: "worker_id and assigned_role are required" });
+        if (!worker_id || !name || !assigned_service || !date_of_joining) {
+            return res.status(400).json({ error: "worker_id, name, assigned_service and date of joining are required" });
         }
 
         const { data, error } = await supabase
             .from("worker")
-            .update({ assigned_role })
+            .update({ name, phone_no, assigned_service, date_of_joining })
             .eq("worker_id", worker_id)
             .select(); 
 
         if (error) {
-            return res.status(401).json({ error: "Error updating worker role" });
+            return res.status(401).json({ error: "Error updating worker details" });
         }
 
         if (data.length === 0) {
             return res.status(404).json({ error: "Worker not found" });
         }
 
-        res.json({ message: "Worker role updated successfully", worker: data });
+        res.json({ message: "Worker details updated successfully", worker: data });
     } catch (err) {
         console.error("Update error:", err);
         res.status(500).json({ error: "Internal server error" });
@@ -482,4 +596,4 @@ const completeRequest = async (req, res) => {
 
 
 
-module.exports = { loginAdmin, fetchUsers, fetchEmployees, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserLocation, updateWorkerRole, resolveComplaint, completeRequest };
+module.exports = { loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, resolveComplaint, completeRequest };
