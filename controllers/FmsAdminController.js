@@ -615,7 +615,46 @@ const completeRequest = async (req, res) => {
     }
 };
 
+const fetchActiveRequests = async (req, res) => {
+    try {
+        const { data: requests, error } = await supabase
+            .from("requests")
+            .select(`
+                user_id,
+                worker_id,
+                service_id,
+                building,
+                room_no,
+                feedback,
+                is_completed,
+                request_time,
+                services (
+                    service_type
+                )
+            `)
+            .eq("is_completed", false);
+
+        if (error) {
+            return res.status(500).json({ error: "Error fetching active requests", details: error });
+        }
+
+        const formatted = requests.map(r => ({
+            user_id: r.User_ID,
+            worker_id: r.Worker_ID,
+            service: r.services?.service_type || "Unknown",
+            building: r.building,
+            room_no: r.room_no,
+            time: r.request_time,
+            status: r.is_completed ? "completed" : "pending"
+        }));
+
+        res.json({ requests: formatted });
+    } catch (err) {
+        console.error("Error fetching active requests:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
 
-module.exports = { loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
+module.exports = { fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };

@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest } = require("../controllers/FmsAdminController");
+const { fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest } = require("../controllers/FmsAdminController");
 
 router.post("/login", loginAdmin);
 router.get("/view-users", fetchUsers);
@@ -20,6 +20,6 @@ router.put("/update-worker-role", updateWorkerData);
 router.put("/update-order-status", updateOrderStatus);
 router.put("/resolve-complaint", resolveComplaint);
 router.put("/complete-request", completeRequest);
-
+router.get("/active-requests", fetchActiveRequests);
 
 module.exports = router;
