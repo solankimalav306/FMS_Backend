@@ -49,7 +49,7 @@ const fetchWorkQueue = async (req, res) => {
     try {
         const { data: requests, error } = await supabase
             .from("requests")
-            .select("building, room_no")
+            .select("building, room_no, request_time")
             .eq("worker_id", WorkerID)
             .eq("is_completed", false);
 
@@ -58,7 +58,7 @@ const fetchWorkQueue = async (req, res) => {
         }
 
         // Format each entry as "room_no,building"
-        const formattedQueue = requests.map(req => `${req.room_no},${req.building}`);
+        const formattedQueue = requests.map(req => `${req.room_no},${req.building},${req.request_time}`);
 
         res.json({ queue: formattedQueue });
     } catch (err) {
