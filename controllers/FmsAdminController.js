@@ -462,7 +462,7 @@ const updateUserData = async (req, res) => {
             .select("*");
 
         if (error) {
-            return res.status(500).json({ error: "Error updating user", details: error.message });
+            return res.status(401).json({ error: "Error updating user details" });
         }
 
         // --- Handle User Not Found or No Update ---
@@ -473,7 +473,7 @@ const updateUserData = async (req, res) => {
             return res.status(404).json({ error: "User not found with the provided user_id" });
         }
 
-        res.status(200).json({ message: "User updated successfully", user: data[0] });
+        res.json({ message: "User details updated successfully", user: data });
     } catch (err) {
         // --- Catch unexpected errors (e.g., programming errors in the try block) ---
         console.error("Unexpected error in updateUserData handler:", err);
@@ -518,7 +518,11 @@ const updateWorkerData = async (req, res) => {
 };
 
 const updateOrderStatus = async (req, res) => {
-      //hello
+    console.log("🔎 Checking session AdminID:", req.session.AdminID);
+
+    if (!req.session.AdminID) {
+        return res.status(401).json({ error: "Unauthorized. Please log in." });
+    }
 
     try {
         const { order_id, collected } = req.body;
