@@ -65,8 +65,8 @@ const fetchOrders = async (req, res) => {
 };
 
 
-const markorderrecived = async (req, res) => {
-    const { orderID } = req.body;
+const updateorder = async (req, res) => {
+    const { orderID , collected } = req.body;
 
     try {
         const { data: orders, error: fetchError } = await supabase
@@ -80,7 +80,7 @@ const markorderrecived = async (req, res) => {
         }
         const { error: updateError } = await supabase
             .from("orders")
-            .update({ collected: true })
+            .update({ collected: collected })
             .eq("order_id", orderID);
 
         if (updateError) {
