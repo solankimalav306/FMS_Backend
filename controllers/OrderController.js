@@ -74,4 +74,25 @@ const fetchOrders = async (req, res) => {
     }
 };
 
+
+const markorderrecived = async (req, res) => {
+    const { orderID } = req.body;
+    try {
+
+        const { data: orders, error } = await supabase
+            .from("orders")
+            .eq('order_id',orderID)
+            .select("*")
+
+        if (error) {
+            return res.status(500).json({ error: "Error fetching orders" });
+        }
+
+        res.json({ orders });
+    } catch (err) {
+        console.error("Error fetching orders:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 module.exports = { getPendingOrders, fetchOrderHistory, fetchOrders };
