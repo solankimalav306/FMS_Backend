@@ -5,8 +5,8 @@ const loginWorker = async (req, res) => {
 
     if (!Worker_ID || !WorkerPassword) {
         return res.status(400).json({ error: "Worker_ID and password are required" });
-    }   
-    
+    }
+
     try {
         const { data: worker, error } = await supabase
             .from("worker")
@@ -18,18 +18,21 @@ const loginWorker = async (req, res) => {
             return res.status(401).json({ error: "Invalid Worker_ID or password" });
         }
 
-
         if (WorkerPassword !== worker.workerpassword) {
             return res.status(401).json({ error: "Invalid Worker_ID or password" });
         }
-        
-        req.session.WorkerID = worker.worker_id;
-        req.session.workerRole = worker.assigned_role;
-        req.session.workerAreaOfService = worker.assigned_location;
-        console.log("✅ Session WorkerID Set:", req.session.Worker_ID);
-        const { workerpassword, ...workerWithoutData } = worker;
 
-        res.json({ message: "Login successful", worker: workerWithoutData });
+        // ✅ Only return the last assigned_location (if exists)
+        const latestAssignedLocation = Array.isArray(worker.assigns) && worker.assigns.length > 0
+            ? worker.assigns[worker.assigns.length - 1].assigned_location
+            : null;
+
+        res.json({
+            worker_id: worker.worker_id,
+            role: worker.assigned_role,
+            assigned_location: latestAssignedLocation
+        });
+
     } catch (err) {
         console.error("Login error:", err);
         res.status(500).json({ error: "Internal server error" });
@@ -37,41 +40,71 @@ const loginWorker = async (req, res) => {
 };
 
 const fetchWorkQueue = async (req, res) => {
-    console.log("🔎 Checking session WorkerID:", req.session.WorkerID);
+    const { WorkerID } = req.body;
 
-    if (!req.session.WorkerID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
+    if (!WorkerID) {
+        return res.status(400).json({ error: "WorkerID is required" });
     }
 
     try {
-        const { data: queue, error } = await supabase
-            .from("assigns")
-            .select("assigned_location")
-            .eq("worker_id", req.session.WorkerID)
+        const { data: requests, error } = await supabase
+            .from("requests")
+            .select("building, room_no, request_time")
+            .eq("worker_id", WorkerID)
+            .eq("is_completed", false);
 
         if (error) {
-            return res.status(500).json({ error: "Error fetching queue" });
+            return res.status(500).json({ error: "Error fetching work queue", details: error });
         }
 
-        res.json({ queue });
+        // Format each entry as "room_no,building"
+        const formattedQueue = requests.map(req => `${req.room_no},${req.building},${req.request_time}`);
+
+        res.json({ queue: formattedQueue });
     } catch (err) {
-        console.error("Error fetching queue:", err);
+        console.error("Error fetching work queue:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
 
-const fetchPreviousOrders = async (req, res) => {
-    console.log("🔎 Checking session WorkerID:", req.session.WorkerID);
+const markRequestCompleted = async (req, res) => {
+    const { worker_id, building, room_no, request_time } = req.body;
 
-    if (!req.session.WorkerID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
+    if (!worker_id || !building || !room_no || !request_time) {
+        return res.status(400).json({ error: "Missing required fields" });
     }
 
     try {
+        const { error } = await supabase
+            .from("requests")
+            .update({ is_completed: true })
+            .match({
+                worker_id: worker_id,
+                building: building,
+                room_no: room_no,
+                request_time: request_time
+            });
+
+        if (error) {
+            return res.status(500).json({ error: "Failed to update request", details: error });
+        }
+
+        res.json({ success: true, message: "Request marked as completed." });
+    } catch (err) {
+        console.error("Error updating request:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+const fetchPreviousOrders = async (req, res) => {
+    const { WorkerID } = req.body;
+    try {
         const { data: orders, error } = await supabase
-            .from("orders")
+            .from("")
             .select("order_id, location")
-            .eq("worker_id", req.session.WorkerID)
+            .eq("worker_id", WorkerID)
+            .eq("is_completed", false);
 
         if (error) {
             return res.status(500).json({ error: "Error fetching orders" });
@@ -84,5 +117,52 @@ const fetchPreviousOrders = async (req, res) => {
     }
 };
 
+const createOrder = async (req, res) => {
+    const { worker_id, user_id, location } = req.body;
 
-module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders };
+    if (!worker_id || !user_id || !location) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    try {
+        // Get the current highest order_id
+        const { data: latest, error: fetchError } = await supabase
+            .from("orders")
+            .select("order_id")
+            .order("order_id", { ascending: false })
+            .limit(1);
+
+        if (fetchError) {
+            return res.status(500).json({ error: "Error fetching latest order_id" });
+        }
+
+        const newOrderId = (latest[0]?.order_id || 0) + 1;
+
+        const { data, error } = await supabase
+            .from("orders")
+            .insert([
+                {
+                    order_id: newOrderId, // manually set
+                    worker_id,
+                    user_id,
+                    location,
+                    collected: false
+                }
+            ])
+            .select("*");
+
+        if (error) {
+            return res.status(500).json({ error: "Error creating order", details: error.message });
+        }
+
+        res.status(201).json({ message: "Order created", order: data[0] });
+    } catch (err) {
+        console.error("Error creating order:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+
+
+module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder};

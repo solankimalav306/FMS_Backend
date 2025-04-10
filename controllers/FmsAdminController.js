@@ -272,12 +272,6 @@ const addWorker = async (req, res) => {
 };
 
 const addUser = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
-
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
-
     try {
         const { user_id, username, email, building, roomno, userpassword } = req.body;
 
@@ -448,62 +442,27 @@ const removeService = async (req, res) => {
 };
 
 const updateUserData = async (req, res) => {
-    process.stdout.write("!!! DEBUG: FUNCTION CALLED !!!\n");
-    // --- Debug: Log route entry and received body ---
-    console.log('--- PUT /admin/update-user-location (or appropriate path) ---'); // Adjust path if needed
-    console.log('Received request body:', JSON.stringify(req.body, null, 2)); // Log the full body prettified
+    const { user_id, username, email, building, roomno, userpassword } = req.body;
+
+    if (!user_id) {
+        return res.status(400).json({ error: "User_ID is required" });
+    }
 
     try {
-        // --- Extract data from body ---
-        const { user_id, username, building, roomno, email } = req.body;
-        console.log('Extracted Data:', { user_id, username, building, roomno }); // Log the destructured variables
-
-        // --- Basic Validation ---
-        // Optional: Add more specific checks (e.g., typeof building === 'string') if needed
-        if (!user_id) { // Only user_id might be strictly necessary to identify the user
-            console.error('Validation Error: user_id is missing.');
-            return res.status(400).json({ error: "user_id is required to update user data" });
-        }
-        // Depending on your logic, you might allow partial updates,
-        // so checking for !username, !building, !roomno might be too strict here
-        // unless they are *always* required for an update.
-
-        // --- Prepare update object (only include fields that are actually present) ---
-        // This prevents accidentally setting fields to 'undefined' in the database
-        // if they weren't sent by the frontend.
-        const updateObject = {};
-        if (username !== undefined) updateObject.username = username;
-        if (building !== undefined) updateObject.building = building; // MAKE SURE 'building' IS THE CORRECT DB COLUMN NAME
-        if (roomno !== undefined) updateObject.roomno = roomno;
-        updateObject.email = email;    // MAKE SURE 'roomno' IS THE CORRECT DB COLUMN NAME
-
-        console.log(`Prepared update object for user ${user_id}:`, updateObject);
-
-        // Check if there's anything to update
-        if (Object.keys(updateObject).length === 0) {
-            console.warn(`No fields provided to update for user_id: ${user_id}`);
-            // Decide how to handle this - maybe success with no change, or a bad request?
-            return res.status(400).json({ error: "No update data provided" });
-            // Or: return res.json({ message: "No changes applied", user: null });
-        }
-
-
-        // --- Database Interaction ---
-        console.log(`Attempting Supabase update for user_id: ${user_id}`);
         const { data, error } = await supabase
-            .from("users") // Ensure 'users' is the correct table name
-            .update(updateObject) // Use the object with defined fields
-            .eq("user_id", user_id) // Ensure 'user_id' is the correct primary key column
-            .select(); // select() returns the updated rows
+            .from("users")
+            .update({
+                username,
+                email,
+                building,
+                roomno,
+                userpassword
+            })
+            .eq("user_id", user_id)
+            .select("*");
 
-        // --- Debug: Log Supabase Response ---
-        console.log('Supabase update response:', { data: JSON.stringify(data, null, 2), error: error });
-
-        // --- Handle Supabase Errors ---
         if (error) {
-            console.error('Supabase Error during update:', error);
-            // Use 500 for database errors, unless it's a specific constraint violation etc.
-            return res.status(500).json({ error: "Error updating user details in database", details: error.message });
+            return res.status(500).json({ error: "Error updating user", details: error.message });
         }
 
         // --- Handle User Not Found or No Update ---
@@ -514,16 +473,14 @@ const updateUserData = async (req, res) => {
             return res.status(404).json({ error: "User not found with the provided user_id" });
         }
 
-        // --- Success ---
-        console.log(`Successfully updated user ${user_id}. Data:`, JSON.stringify(data[0], null, 2));
-        res.json({ message: "User details updated successfully", user: data[0] }); // Return the first updated user object
-
+        res.status(200).json({ message: "User updated successfully", user: data[0] });
     } catch (err) {
         // --- Catch unexpected errors (e.g., programming errors in the try block) ---
         console.error("Unexpected error in updateUserData handler:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 const updateWorkerData = async (req, res) => {
     console.log("🔎 Checking session AdminID:", req.session.AdminID);
@@ -667,7 +624,9 @@ const completeRequest = async (req, res) => {
 
 const fetchActiveRequests = async (req, res) => {
     try {
-        const { data: requests, error } = await supabase
+        const limit = parseInt(req.query.limit) || null;
+
+        let query = supabase
             .from("requests")
             .select(`
                 user_id,
@@ -675,22 +634,22 @@ const fetchActiveRequests = async (req, res) => {
                 service_id,
                 building,
                 room_no,
-                feedback,
-                is_completed,
                 request_time,
-                services (
-                    service_type
-                )
+                is_completed,
+                services ( service_type )
             `)
-            .eq("is_completed", false);
+            .eq("is_completed", false)
+            .order("request_time", { ascending: false });
 
-        if (error) {
-            return res.status(500).json({ error: "Error fetching active requests", details: error });
-        }
+        if (limit) query = query.limit(limit);
+
+        const { data: requests, error } = await query;
+
+        if (error) return res.status(500).json({ error: error.message });
 
         const formatted = requests.map(r => ({
-            user_id: r.User_ID,
-            worker_id: r.Worker_ID,
+            user_id: r.user_id,
+            worker_id: r.worker_id,
             service: r.services?.service_type || "Unknown",
             building: r.building,
             room_no: r.room_no,
@@ -700,7 +659,6 @@ const fetchActiveRequests = async (req, res) => {
 
         res.json({ requests: formatted });
     } catch (err) {
-        console.error("Error fetching active requests:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
