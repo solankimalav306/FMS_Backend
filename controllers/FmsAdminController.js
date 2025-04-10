@@ -35,7 +35,10 @@ const loginAdmin = async (req, res) => {
 
 const fetchUsers = async (req, res) => {
 
+    console.log("hi");
+
     try {
+        console.log("please kill me");
         const { data: users, error } = await supabase
             .from("users")
             .select("*")
@@ -445,32 +448,79 @@ const removeService = async (req, res) => {
 };
 
 const updateUserData = async (req, res) => {
-    
+    process.stdout.write("!!! DEBUG: FUNCTION CALLED !!!\n");
+    // --- Debug: Log route entry and received body ---
+    console.log('--- PUT /admin/update-user-location (or appropriate path) ---'); // Adjust path if needed
+    console.log('Received request body:', JSON.stringify(req.body, null, 2)); // Log the full body prettified
 
     try {
-        const { user_id, username , building, roomno } = req.body;
+        // --- Extract data from body ---
+        const { user_id, username, building, roomno, email } = req.body;
+        console.log('Extracted Data:', { user_id, username, building, roomno }); // Log the destructured variables
 
-        if (!user_id || !username ) {
-            return res.status(400).json({ error: "user_id, username are required" });
+        // --- Basic Validation ---
+        // Optional: Add more specific checks (e.g., typeof building === 'string') if needed
+        if (!user_id) { // Only user_id might be strictly necessary to identify the user
+            console.error('Validation Error: user_id is missing.');
+            return res.status(400).json({ error: "user_id is required to update user data" });
+        }
+        // Depending on your logic, you might allow partial updates,
+        // so checking for !username, !building, !roomno might be too strict here
+        // unless they are *always* required for an update.
+
+        // --- Prepare update object (only include fields that are actually present) ---
+        // This prevents accidentally setting fields to 'undefined' in the database
+        // if they weren't sent by the frontend.
+        const updateObject = {};
+        if (username !== undefined) updateObject.username = username;
+        if (building !== undefined) updateObject.building = building; // MAKE SURE 'building' IS THE CORRECT DB COLUMN NAME
+        if (roomno !== undefined) updateObject.roomno = roomno;
+        updateObject.email = email;    // MAKE SURE 'roomno' IS THE CORRECT DB COLUMN NAME
+
+        console.log(`Prepared update object for user ${user_id}:`, updateObject);
+
+        // Check if there's anything to update
+        if (Object.keys(updateObject).length === 0) {
+            console.warn(`No fields provided to update for user_id: ${user_id}`);
+            // Decide how to handle this - maybe success with no change, or a bad request?
+            return res.status(400).json({ error: "No update data provided" });
+            // Or: return res.json({ message: "No changes applied", user: null });
         }
 
+
+        // --- Database Interaction ---
+        console.log(`Attempting Supabase update for user_id: ${user_id}`);
         const { data, error } = await supabase
-            .from("users")
-            .update({ user_id,username, building, roomno })
-            .eq("user_id", user_id)
-            .select();
+            .from("users") // Ensure 'users' is the correct table name
+            .update(updateObject) // Use the object with defined fields
+            .eq("user_id", user_id) // Ensure 'user_id' is the correct primary key column
+            .select(); // select() returns the updated rows
 
+        // --- Debug: Log Supabase Response ---
+        console.log('Supabase update response:', { data: JSON.stringify(data, null, 2), error: error });
+
+        // --- Handle Supabase Errors ---
         if (error) {
-            return res.status(401).json({ error: "Error updating user details" });
+            console.error('Supabase Error during update:', error);
+            // Use 500 for database errors, unless it's a specific constraint violation etc.
+            return res.status(500).json({ error: "Error updating user details in database", details: error.message });
         }
 
-        if (data.length === 0) {
-            return res.status(404).json({ error: "User not found" });
+        // --- Handle User Not Found or No Update ---
+        // If .eq() finds no match, Supabase update usually returns data: [] and error: null
+        if (!data || data.length === 0) {
+            console.warn(`User not found or no update needed for user_id: ${user_id}. Supabase returned empty data.`);
+            // 404 is appropriate if the user specified by user_id doesn't exist
+            return res.status(404).json({ error: "User not found with the provided user_id" });
         }
 
-        res.json({ message: "User details updated successfully", user: data });
+        // --- Success ---
+        console.log(`Successfully updated user ${user_id}. Data:`, JSON.stringify(data[0], null, 2));
+        res.json({ message: "User details updated successfully", user: data[0] }); // Return the first updated user object
+
     } catch (err) {
-        console.error("Update error:", err);
+        // --- Catch unexpected errors (e.g., programming errors in the try block) ---
+        console.error("Unexpected error in updateUserData handler:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
