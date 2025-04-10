@@ -98,12 +98,13 @@ const markRequestCompleted = async (req, res) => {
 
 
 const fetchPreviousOrders = async (req, res) => {
-
+    const { WorkerID } = req.body;
     try {
         const { data: orders, error } = await supabase
-            .from("orders")
+            .from("")
             .select("order_id, location")
-            .eq("worker_id", req.session.WorkerID)
+            .eq("worker_id", WorkerID)
+            .eq("is_completed", false);
 
         if (error) {
             return res.status(500).json({ error: "Error fetching orders" });
@@ -116,5 +117,52 @@ const fetchPreviousOrders = async (req, res) => {
     }
 };
 
+const createOrder = async (req, res) => {
+    const { worker_id, user_id, location } = req.body;
 
-module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted};
+    if (!worker_id || !user_id || !location) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    try {
+        // Get the current highest order_id
+        const { data: latest, error: fetchError } = await supabase
+            .from("orders")
+            .select("order_id")
+            .order("order_id", { ascending: false })
+            .limit(1);
+
+        if (fetchError) {
+            return res.status(500).json({ error: "Error fetching latest order_id" });
+        }
+
+        const newOrderId = (latest[0]?.order_id || 0) + 1;
+
+        const { data, error } = await supabase
+            .from("orders")
+            .insert([
+                {
+                    order_id: newOrderId, // manually set
+                    worker_id,
+                    user_id,
+                    location,
+                    collected: false
+                }
+            ])
+            .select("*");
+
+        if (error) {
+            return res.status(500).json({ error: "Error creating order", details: error.message });
+        }
+
+        res.status(201).json({ message: "Order created", order: data[0] });
+    } catch (err) {
+        console.error("Error creating order:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+
+
+module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder};
