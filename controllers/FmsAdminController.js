@@ -4,9 +4,9 @@ const loginAdmin = async (req, res) => {
     const { Admin_ID, AdminPassword } = req.body;
 
     if (!Admin_ID || !AdminPassword) {
-        return res.status(400).json({ error: "Admin_ID and password are required" });
-    }   
-    
+        return res.status(400).json({ status: "FAIL", message: "Admin ID and password are required" });
+    }
+
     try {
         const { data: admin, error } = await supabase
             .from("fms_admin")
@@ -14,33 +14,26 @@ const loginAdmin = async (req, res) => {
             .eq("admin_id", Admin_ID)
             .single();
 
-
         if (error || !admin) {
-            return res.status(401).json({ error: "Invalid Admin_ID or password" });
+            return res.status(401).json({ status: "FAIL", message: "Invalid Admin ID" });
         }
-
 
         if (AdminPassword !== admin.password) {
-            return res.status(401).json({ error: "Invalid Admin_ID or password" });
+            return res.status(401).json({ status: "FAIL", message: "Invalid password" });
         }
-        
+
         req.session.AdminID = admin.admin_id;
-        console.log("✅ Session WorkerID Set:", req.session.Worker_ID);
+        console.log("✅ Session AdminID Set:", req.session.AdminID);
         const { password, ...adminWithoutData } = admin;
 
-        res.json({ message: "Login successful", admin: adminWithoutData });
+        return res.json({ status: "PASS", message: "Login successful", admin: adminWithoutData });
     } catch (err) {
         console.error("Login error:", err);
-        res.status(500).json({ error: "Internal server error" });
+        return res.status(500).json({ status: "FAIL", message: "Internal server error" });
     }
 };
 
 const fetchUsers = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
-
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
 
     try {
         const { data: users, error } = await supabase
@@ -98,8 +91,8 @@ const addService = async (req, res) => {
         const { data, error } = await supabase
             .from("services")
             .insert([
-                { 
-                    service_id, 
+                {
+                    service_id,
                     service_type
                 }
             ])
@@ -126,7 +119,7 @@ const addWorker = async (req, res) => {
     try {
         const { worker_id, name, phone_no, assigned_role, date_of_joining, workerpassword, rating } = req.body;
 
-        
+
         if (!worker_id || !name || !phone_no || !assigned_role || !date_of_joining || !workerpassword) {
             return res.status(400).json({ error: "All fields except rating are required" });
         }
@@ -140,11 +133,11 @@ const addWorker = async (req, res) => {
                     phone_no,
                     assigned_role,
                     date_of_joining,
-                    rating: rating || null, 
+                    rating: rating || null,
                     workerpassword
                 }
             ])
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error adding worker" });
@@ -178,12 +171,12 @@ const addUser = async (req, res) => {
                     user_id,
                     username,
                     email,
-                    building: building || null, 
-                    roomno: roomno || null, 
+                    building: building || null,
+                    roomno: roomno || null,
                     userpassword
                 }
             ])
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error adding user" });
@@ -218,7 +211,7 @@ const addAdmin = async (req, res) => {
                     password
                 }
             ])
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error adding admin" });
@@ -249,7 +242,7 @@ const removeWorker = async (req, res) => {
             .from("worker")
             .delete()
             .eq("worker_id", worker_id)
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error deleting worker" });
@@ -284,7 +277,7 @@ const removeUser = async (req, res) => {
             .from("users")
             .delete()
             .eq("user_id", user_id)
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error deleting user" });
@@ -319,7 +312,7 @@ const removeService = async (req, res) => {
             .from("services")
             .delete()
             .eq("service_type", service_type)
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error deleting service" });
@@ -358,7 +351,7 @@ const updateUserLocation = async (req, res) => {
             .from("users")
             .update({ building, roomno })
             .eq("user_id", user_id)
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error updating user details" });
@@ -393,7 +386,7 @@ const updateWorkerRole = async (req, res) => {
             .from("worker")
             .update({ assigned_role })
             .eq("worker_id", worker_id)
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error updating worker role" });
@@ -426,9 +419,9 @@ const resolveComplaint = async (req, res) => {
 
         const { data, error } = await supabase
             .from("files")
-            .update({ is_resolved: true }) 
+            .update({ is_resolved: true })
             .eq("complaint_id", complaint_id)
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error updating complaint status" });
@@ -461,9 +454,9 @@ const completeRequest = async (req, res) => {
 
         const { data, error } = await supabase
             .from("requests")
-            .update({ is_completed: true }) 
+            .update({ is_completed: true })
             .eq("request_id", request_id)
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error updating request status" });
