@@ -378,11 +378,8 @@ const removeWorker = async (req, res) => {
 };
 
 const removeUser = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
+    
 
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
 
     try {
         const { user_id } = req.body;
