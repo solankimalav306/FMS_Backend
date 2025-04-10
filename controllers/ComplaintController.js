@@ -1,8 +1,10 @@
 const supabase = require("../config/supabaseClient");
 
 const fetchActiveComplaints = async (req, res) => {
+    const limit = parseInt(req.query.limit) || null;
+
     try {
-        const { data: complaints, error } = await supabase
+        let query = supabase
             .from("files")
             .select(`
                 complaint_id,
@@ -12,25 +14,32 @@ const fetchActiveComplaints = async (req, res) => {
                     complaint_datetime
                 )
             `)
-            .eq("is_resolved", false);
+            .eq("is_resolved", false)
+            .order("complaint_id", { ascending: false });
+
+        if (limit) query = query.limit(limit);
+
+        const { data, error } = await query;
 
         if (error) {
-            return res.status(500).json({ error: "Error fetching complaints", details: error });
+            return res.status(500).json({ error: "Error fetching complaints" });
         }
 
-        const formatted = complaints.map(item => ({
-            complaint_id: item.complaint_id,
-            complaint: item.complaints?.complaint || "N/A",
-            complaint_datetime: item.complaints?.complaint_datetime || null,
-            is_resolved: item.is_resolved
+        // Format flattened result
+        const complaints = data.map(c => ({
+            complaint_id: c.complaint_id,
+            is_resolved: c.is_resolved,
+            complaint: c.complaints?.complaint,
+            complaint_datetime: c.complaints?.complaint_datetime
         }));
 
-        res.json({ complaints: formatted });
+        res.json({ complaints });
     } catch (err) {
         console.error("Error fetching complaints:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 
 
