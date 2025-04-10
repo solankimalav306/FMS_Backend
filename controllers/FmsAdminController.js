@@ -161,7 +161,7 @@ const assignService = async (req, res) => {
 
         const service_id = serviceData.service_id;
         const admin_id = req.session.AdminID;
-        const assigned_time = new Date().toISOString(); 
+        const assigned_time = new Date().toISOString();
 
         const { data: insertData, error: insertError } = await supabase
             .from('assigns')
@@ -174,7 +174,7 @@ const assignService = async (req, res) => {
                     assigned_location
                 }
             ])
-            .select(); 
+            .select();
 
         if (insertError) {
             console.error("Error inserting into assigns:", insertError);
@@ -378,7 +378,7 @@ const removeWorker = async (req, res) => {
 };
 
 const removeUser = async (req, res) => {
-    
+
 
 
     try {
@@ -445,22 +445,18 @@ const removeService = async (req, res) => {
 };
 
 const updateUserData = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
-
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
+    
 
     try {
-        const { user_id, username, email, building, roomno } = req.body;
+        const { user_id, username , building, roomno } = req.body;
 
-        if (!user_id || !username || !email) {
-            return res.status(400).json({ error: "user_id, username and email are required" });
+        if (!user_id || !username ) {
+            return res.status(400).json({ error: "user_id, username are required" });
         }
 
         const { data, error } = await supabase
             .from("users")
-            .update({ username, email, building, roomno })
+            .update({ user_id,username, building, roomno })
             .eq("user_id", user_id)
             .select();
 
@@ -532,7 +528,7 @@ const updateOrderStatus = async (req, res) => {
             .from("orders")
             .update({ collected })
             .eq("order_id", order_id)
-            .select(); 
+            .select();
 
         if (error) {
             return res.status(401).json({ error: "Error updating order details" });
