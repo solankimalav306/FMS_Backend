@@ -163,6 +163,58 @@ const createOrder = async (req, res) => {
 };
 
 
+const getLatestAssignedWorkers = async (req, res) => {
+    const limit = parseInt(req.query.limit) || null;
+
+    try {
+        // Step 1: Get latest assigned_time per worker
+        const { data: latestAssigns, error: assignsError } = await supabase
+            .from('assigns')
+            .select('worker_id, assigned_time')
+            .order('assigned_time', { ascending: false });
+
+        if (assignsError) {
+            return res.status(500).json({ error: "Error fetching assigns", details: assignsError.message });
+        }
+
+        // Group by latest assigned_time per worker
+        const latestMap = {};
+        for (const row of latestAssigns) {
+            if (!latestMap[row.worker_id]) {
+                latestMap[row.worker_id] = row.assigned_time;
+            }
+        }
+
+        // Step 2: Fetch worker + assign info based on latestMap
+        const assignments = Object.entries(latestMap)
+            .map(([worker_id, assigned_time]) => ({ worker_id: parseInt(worker_id), assigned_time }));
+
+        const queries = await Promise.all(assignments.slice(0, limit).map(async ({ worker_id, assigned_time }) => {
+            const { data, error } = await supabase
+                .from('assigns')
+                .select('assigned_location, assigned_time, worker:worker_id(name)')
+                .eq('worker_id', worker_id)
+                .eq('assigned_time', assigned_time)
+                .single();
+
+            if (!error && data) {
+                return {
+                    worker_id,
+                    name: data.worker.name,
+                    assigned_location: data.assigned_location
+                };
+            }
+        }));
+
+        res.status(200).json({ workers: queries.filter(Boolean) });
+
+    } catch (err) {
+        console.error("Internal server error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
-module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder};
+
+
+module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers};

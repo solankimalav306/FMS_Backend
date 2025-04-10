@@ -41,7 +41,7 @@ const fetchUsers = async (req, res) => {
         console.log("please kill me");
         const { data: users, error } = await supabase
             .from("users")
-            .select("*")
+            .select("*");
 
         if (error) {
             return res.status(500).json({ error: "Error fetching users" });
