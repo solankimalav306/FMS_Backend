@@ -57,12 +57,16 @@ const fetchWorkQueue = async (req, res) => {
             return res.status(500).json({ error: "Error fetching work queue", details: error });
         }
 
-        res.json({ queue: requests });
+        // Format each entry as "room_no,building"
+        const formattedQueue = requests.map(req => `${req.room_no},${req.building}`);
+
+        res.json({ queue: formattedQueue });
     } catch (err) {
         console.error("Error fetching work queue:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 
 const fetchPreviousOrders = async (req, res) => {
