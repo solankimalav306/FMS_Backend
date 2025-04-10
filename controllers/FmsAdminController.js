@@ -231,14 +231,10 @@ const addService = async (req, res) => {
 };
 
 const addWorker = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
 
     try {
-        const { worker_id, name, phone_no, assigned_role, date_of_joining, workerpassword, rating } = req.body;
+        const { worker_id, name, phone_no, assigned_role, date_of_joining, rating, workerpassword, } = req.body;
 
 
         if (!worker_id || !name || !phone_no || !assigned_role || !date_of_joining || !workerpassword) {
@@ -285,9 +281,9 @@ const addUser = async (req, res) => {
                 {
                     user_id,
                     username,
-                    email,
                     building: building || null,
                     roomno: roomno || null,
+                    email,
                     userpassword
                 }
             ])
