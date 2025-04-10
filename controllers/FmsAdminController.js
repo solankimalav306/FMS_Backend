@@ -643,8 +643,8 @@ const fetchActiveRequests = async (req, res) => {
         }
 
         const formatted = requests.map(r => ({
-            user_id: r.User_ID,
-            worker_id: r.Worker_ID,
+            user_id: r.user_id,
+            worker_id: r.worker_id,
             service: r.services?.service_type || "Unknown",
             building: r.building,
             room_no: r.room_no,
@@ -658,7 +658,6 @@ const fetchActiveRequests = async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 };
-
 
 
 module.exports = { fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
