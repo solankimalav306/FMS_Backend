@@ -40,23 +40,30 @@ const loginWorker = async (req, res) => {
 };
 
 const fetchWorkQueue = async (req, res) => {
+    const { WorkerID } = req.body;
+
+    if (!WorkerID) {
+        return res.status(400).json({ error: "WorkerID is required" });
+    }
 
     try {
-        const { data: queue, error } = await supabase
-            .from("assigns")
-            .select("assigned_location")
-            .eq("worker_id", req.session.WorkerID)
+        const { data: requests, error } = await supabase
+            .from("requests")
+            .select("building, room_no")
+            .eq("worker_id", WorkerID)
+            .eq("is_completed", false);
 
         if (error) {
-            return res.status(500).json({ error: "Error fetching queue" });
+            return res.status(500).json({ error: "Error fetching work queue", details: error });
         }
 
-        res.json({ queue });
+        res.json({ queue: requests });
     } catch (err) {
-        console.error("Error fetching queue:", err);
+        console.error("Error fetching work queue:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 const fetchPreviousOrders = async (req, res) => {
 
