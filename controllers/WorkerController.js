@@ -37,11 +37,6 @@ const loginWorker = async (req, res) => {
 };
 
 const fetchWorkQueue = async (req, res) => {
-    console.log("🔎 Checking session WorkerID:", req.session.WorkerID);
-
-    if (!req.session.WorkerID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
 
     try {
         const { data: queue, error } = await supabase
@@ -61,11 +56,6 @@ const fetchWorkQueue = async (req, res) => {
 };
 
 const fetchPreviousOrders = async (req, res) => {
-    console.log("🔎 Checking session WorkerID:", req.session.WorkerID);
-
-    if (!req.session.WorkerID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
 
     try {
         const { data: orders, error } = await supabase
