@@ -617,7 +617,9 @@ const completeRequest = async (req, res) => {
 
 const fetchActiveRequests = async (req, res) => {
     try {
-        const { data: requests, error } = await supabase
+        const limit = parseInt(req.query.limit) || null;
+
+        let query = supabase
             .from("requests")
             .select(`
                 user_id,
@@ -625,18 +627,18 @@ const fetchActiveRequests = async (req, res) => {
                 service_id,
                 building,
                 room_no,
-                feedback,
-                is_completed,
                 request_time,
-                services (
-                    service_type
-                )
+                is_completed,
+                services ( service_type )
             `)
-            .eq("is_completed", false);
+            .eq("is_completed", false)
+            .order("request_time", { ascending: false });
 
-        if (error) {
-            return res.status(500).json({ error: "Error fetching active requests", details: error });
-        }
+        if (limit) query = query.limit(limit);
+
+        const { data: requests, error } = await query;
+
+        if (error) return res.status(500).json({ error: error.message });
 
         const formatted = requests.map(r => ({
             user_id: r.user_id,
@@ -650,10 +652,10 @@ const fetchActiveRequests = async (req, res) => {
 
         res.json({ requests: formatted });
     } catch (err) {
-        console.error("Error fetching active requests:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 
 module.exports = { fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
