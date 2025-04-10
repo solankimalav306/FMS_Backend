@@ -90,24 +90,6 @@ const fetchActiveRequests = async (req, res) => {
     }
 };
 
-const fetchRequestsHistory = async (req, res) => {
-    try {
-        const { data: requests, error } = await supabase
-            .from("requests")
-            .select("*")
-            .eq("is_completed", true);
-
-        if (error) {
-            return res.status(500).json({ error: "Error fetching requests" });
-        }
-
-        res.json({ requests });
-    } catch (err) {
-        console.error("Error fetching requests:", err);
-        res.status(500).json({ error: "Internal server error" });
-    }
-};
-
 const updatefeedback = async (req, res) => {
     const { User_ID, request_time, feedback, rating } = req.body;
 
@@ -209,4 +191,4 @@ const newUserRequest = async (req, res) => {
   
 
 
-module.exports = { fetchPreviousBookings, fetchOntimeBookings, fetchActiveRequests, fetchRequestsHistory, updatefeedback, newUserRequest };
+module.exports = { fetchPreviousBookings, fetchOntimeBookings, fetchActiveRequests, updatefeedback, newUserRequest };
