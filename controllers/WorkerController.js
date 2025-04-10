@@ -5,8 +5,8 @@ const loginWorker = async (req, res) => {
 
     if (!Worker_ID || !WorkerPassword) {
         return res.status(400).json({ error: "Worker_ID and password are required" });
-    }   
-    
+    }
+
     try {
         const { data: worker, error } = await supabase
             .from("worker")
@@ -18,18 +18,21 @@ const loginWorker = async (req, res) => {
             return res.status(401).json({ error: "Invalid Worker_ID or password" });
         }
 
-
         if (WorkerPassword !== worker.workerpassword) {
             return res.status(401).json({ error: "Invalid Worker_ID or password" });
         }
-        
-        req.session.WorkerID = worker.worker_id;
-        req.session.workerRole = worker.assigned_role;
-        req.session.workerAreaOfService = worker.assigned_location;
-        console.log("✅ Session WorkerID Set:", req.session.Worker_ID);
-        const { workerpassword, ...workerWithoutData } = worker;
 
-        res.json({ message: "Login successful", worker: workerWithoutData });
+        // ✅ Only return the last assigned_location (if exists)
+        const latestAssignedLocation = Array.isArray(worker.assigns) && worker.assigns.length > 0
+            ? worker.assigns[worker.assigns.length - 1].assigned_location
+            : null;
+
+        res.json({
+            worker_id: worker.worker_id,
+            role: worker.assigned_role,
+            assigned_location: latestAssignedLocation
+        });
+
     } catch (err) {
         console.error("Login error:", err);
         res.status(500).json({ error: "Internal server error" });
