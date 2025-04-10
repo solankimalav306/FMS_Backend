@@ -48,6 +48,7 @@ const fetchOrderHistory = async (req, res) => {
 
 const fetchOrders = async (req, res) => {
     try {
+
         const { data: orders, error } = await supabase
             .from("orders")
             .select("*")
