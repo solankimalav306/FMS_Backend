@@ -518,13 +518,13 @@ const updateWorkerData = async (req, res) => {
 };
 
 const updateOrderStatus = async (req, res) => {
-   
+
     try {
         const { order_id, collected } = req.body;
 
-        if (!order_id || !collected) {
-            return res.status(400).json({ error: "order_id and collected status are required" });
-        }
+        // if (!order_id || !collected) {
+        //     return res.status(400).json({ error: "order_id and collected status are required" });
+        // }
 
         const { data, error } = await supabase
             .from("orders")
