@@ -624,9 +624,9 @@ const fetchActiveRequests = async (req, res) => {
         const { data: requests, error } = await supabase
             .from("requests")
             .select(`
-                User_ID,
-                Worker_ID,
-                Service_ID,
+                user_id,
+                worker_id,
+                service_id,
                 building,
                 room_no,
                 feedback,
