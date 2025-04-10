@@ -67,6 +67,34 @@ const fetchWorkQueue = async (req, res) => {
     }
 };
 
+const markRequestCompleted = async (req, res) => {
+    const { worker_id, building, room_no, request_time } = req.body;
+
+    if (!worker_id || !building || !room_no || !request_time) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    try {
+        const { error } = await supabase
+            .from("requests")
+            .update({ is_completed: true })
+            .match({
+                worker_id: worker_id,
+                building: building,
+                room_no: room_no,
+                request_time: request_time
+            });
+
+        if (error) {
+            return res.status(500).json({ error: "Failed to update request", details: error });
+        }
+
+        res.json({ success: true, message: "Request marked as completed." });
+    } catch (err) {
+        console.error("Error updating request:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
 const fetchPreviousOrders = async (req, res) => {
@@ -89,4 +117,4 @@ const fetchPreviousOrders = async (req, res) => {
 };
 
 
-module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders };
+module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted};
