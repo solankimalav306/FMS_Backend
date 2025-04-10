@@ -273,7 +273,7 @@ const addWorker = async (req, res) => {
 
 const addUser = async (req, res) => {
     try {
-        const { user_id, username, email, building, roomno, userpassword } = req.body;
+        const { user_id, username, building, roomno, email, userpassword } = req.body;
 
         if (!user_id || !username || !email || !userpassword) {
             return res.status(400).json({ error: "user_id, username, email, and userpassword are required" });
@@ -540,7 +540,7 @@ const updateOrderStatus = async (req, res) => {
             return res.status(404).json({ error: "Order not found" });
         }
 
-        res.json({ message: "Order details updated successfully", worker: data });
+        res.json({ message: "Order details updated successfully", data: data });
     } catch (err) {
         console.error("Update error:", err);
         res.status(500).json({ error: "Internal server error" });
