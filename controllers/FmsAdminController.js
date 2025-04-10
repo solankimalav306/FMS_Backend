@@ -269,12 +269,6 @@ const addWorker = async (req, res) => {
 };
 
 const addUser = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
-
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
-
     try {
         const { user_id, username, email, building, roomno, userpassword } = req.body;
 
@@ -445,35 +439,40 @@ const removeService = async (req, res) => {
 };
 
 const updateUserData = async (req, res) => {
-    
+    const { user_id, username, email, building, roomno, userpassword } = req.body;
+
+    if (!user_id) {
+        return res.status(400).json({ error: "User_ID is required" });
+    }
 
     try {
-        const { user_id, username , building, roomno } = req.body;
-
-        if (!user_id || !username ) {
-            return res.status(400).json({ error: "user_id, username are required" });
-        }
-
         const { data, error } = await supabase
             .from("users")
-            .update({ user_id,username, building, roomno })
+            .update({
+                username,
+                email,
+                building,
+                roomno,
+                userpassword
+            })
             .eq("user_id", user_id)
-            .select();
+            .select("*");
 
         if (error) {
-            return res.status(401).json({ error: "Error updating user details" });
+            return res.status(500).json({ error: "Error updating user", details: error.message });
         }
 
         if (data.length === 0) {
             return res.status(404).json({ error: "User not found" });
         }
 
-        res.json({ message: "User details updated successfully", user: data });
+        res.status(200).json({ message: "User updated successfully", user: data[0] });
     } catch (err) {
         console.error("Update error:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 const updateWorkerData = async (req, res) => {
     console.log("🔎 Checking session AdminID:", req.session.AdminID);

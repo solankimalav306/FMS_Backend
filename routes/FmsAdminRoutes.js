@@ -15,7 +15,7 @@ router.post("/add-admin", addAdmin);
 router.delete("/remove-worker", removeWorker);
 router.delete("/remove-user", removeUser);
 router.delete("/remove-service", removeService);
-router.put("/update-user-location", updateUserData);
+router.patch("/update-user-data", updateUserData);
 router.put("/update-worker-role", updateWorkerData);
 router.put("/update-order-status", updateOrderStatus);
 router.put("/resolve-complaint", resolveComplaint);
