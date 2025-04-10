@@ -77,22 +77,32 @@ const fetchOrders = async (req, res) => {
 
 const markorderrecived = async (req, res) => {
     const { orderID } = req.body;
+  
     try {
-
-        const { data: orders, error } = await supabase
-            .from("orders")
-            .eq('order_id',orderID)
-            .select("*")
-
-        if (error) {
-            return res.status(500).json({ error: "Error fetching orders" });
-        }
-
-        res.json({ orders });
+      const { data: orders, error: fetchError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("order_id", orderID)
+        .single();
+  
+      if (fetchError || !orders) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({ collected: true })
+        .eq("order_id", orderID);
+  
+      if (updateError) {
+        return res.status(500).json({ error: "Failed to update order status" });
+      }
+  
+      res.json({ message: "Order marked as collected successfully" });
     } catch (err) {
-        console.error("Error fetching orders:", err);
-        res.status(500).json({ error: "Internal server error" });
+      console.error("Error processing order:", err);
+      res.status(500).json({ error: "Internal server error" });
     }
-};
+  };
+  
 
-module.exports = { getPendingOrders, fetchOrderHistory, fetchOrders };
+module.exports = { getPendingOrders, fetchOrderHistory, fetchOrders ,markorderrecived};
