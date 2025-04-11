@@ -573,8 +573,8 @@ const completeRequest = async (req, res) => {
     try {
         const { user_id, worker_id, request_time, iscompleted } = req.body;
 
-        if (!request_id) {
-            return res.status(400).json({ error: "request_id is required" });
+        if (!worker_id) {
+            return res.status(400).json({ error: "worker id is required" });
         }
 
         const { data, error } = await supabase
@@ -582,7 +582,7 @@ const completeRequest = async (req, res) => {
             .update({ worker_id, iscompleted })
             .eq("user_id", user_id)
             .eq("worker_id", worker_id)
-            .eq("requesr_time", request_time)
+            .eq("request_time", request_time)
             .select();
 
         if (error) {
