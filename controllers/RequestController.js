@@ -196,16 +196,15 @@ const fetchBuildingDateRequests = async (req, res) => {
     // Define the columns you want to select - INCLUDE location and service_type
     // ** Adjust 'service_type' if the column name in your 'requests' table is different **
     const columnsToSelect = `
-        request_id, 
+         
         user_id, 
         worker_id, 
         service_id, 
         location,         
         building,         
-        room_no, 
+        
         request_time, 
-        is_completed, 
-        is_cancelled,
+       
         feedback,
         services ( service_type ) 
     `;
