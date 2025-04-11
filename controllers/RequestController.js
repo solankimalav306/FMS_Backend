@@ -197,16 +197,14 @@ const fetchBuildingDateRequests = async (req, res) => {
     // ** Adjust 'service_type' if the column name in your 'requests' table is different **
     const columnsToSelect = `
          
-        user_id, 
-        worker_id, 
-        service_id, 
-               
-        building,         
-        
-        request_time, 
-       
-        feedback,
-        services ( service_type ) 
+                worker_id,
+                user_id,
+                service_id,
+                room_no,
+                building,
+                request_time,
+                feedback,
+                services:service_id(service_type) 
     `;
     // ^^ If service_type is in a related 'services' table, adjust the select like this.
     // If service_type is directly in the 'requests' table, just use 'service_type' instead of 'services(...)'
@@ -241,18 +239,19 @@ const fetchBuildingDateRequests = async (req, res) => {
 
         console.log(`Filtered requests found: ${data ? data.length : 0}`);
         // --- Process data if needed (e.g., flatten related table data) ---
-        const processedData = data.map(item => ({
-            ...item,
-            // If service_type came from related table, flatten it
-            service_type: item.services?.service_type || item.service_type || 'N/A' // Handle both possibilities
-            // Remove the nested 'services' object if you don't need it frontend
-            // services: undefined
+        const formatted = data.map(req => ({
+            worker_id: req.worker_id,
+            user_id: req.user_id,
+            service_type: req.services?.service_type || "Unknown",
+            location: `${req.room_no}, ${req.building}`,
+            request_time: req.request_time,
+            feedback: req.feedback || "N/A"
         }));
         // --- End processing ---
 
 
         // Send the processed data
-        return res.json({ requests: processedData }); // Send the processed data array
+        return res.json({ requests: formatted }); // Send the processed data array
 
     } catch (err) {
         console.error("Error fetching building/date requests:", err);
