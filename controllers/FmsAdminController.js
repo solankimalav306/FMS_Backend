@@ -379,7 +379,9 @@ const removeUser = async (req, res) => {
             .select();
 
         if (error) {
-            return res.status(401).json({ error: "Error deleting user" });
+            console.error("Supabase delete error:", error); // Log the actual Supabase error!
+            // Send 500 for database errors
+            return res.status(500).json({ error: "Database error during user deletion", details: error.message });
         }
 
         if (data.length === 0) {
