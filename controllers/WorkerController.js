@@ -412,6 +412,21 @@ const fetchHighestCompleted = async (req, res) => {
     }
 };
 
+const num20 = async (req, res) => {
+    try {
+        const { data, error } = await supabase.rpc("get_top_rated_workers");
+
+        if (error) {
+            console.error("Supabase error:", error);
+            return res.status(500).json({ error: "Error fetching workers" });
+        }
+
+        res.json({ data });
+    } catch (err) {
+        console.error("Error fetching workers:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
-module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers,addWorkerAssignment, fetchCompletedRequests, fetchLocationGuards, fetchAvgServices, fetchHighestCompleted };
+module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers,addWorkerAssignment, fetchCompletedRequests, fetchLocationGuards, fetchAvgServices, fetchHighestCompleted, num20 };

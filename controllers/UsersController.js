@@ -61,4 +61,36 @@ const fetchDefaultAddress = async (req, res) => {
     }
 };
 
-module.exports = { loginUser, fetchDefaultAddress};
+const num21 = async (req, res) => {
+    try {
+        const { data: user, error } = await supabase.rpc('get_users_not_in_requests');
+
+        if (error || !user) {
+            return res.status(401).json({ error: "Error fetching users" });
+        }
+
+        res.json({ user });
+    } catch (err) {
+        console.error("Error fetching users:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+const num19 = async (req, res) => {
+    try {
+        const { data, error } = await supabase.rpc('get_active_users'); // Placeholder for a SQL function
+
+        if (error) {
+            return res.status(401).json({ error: "Error fetching users", details: error.message });
+        }
+
+        res.json({ users: data });
+    } catch (err) {
+        console.error("Error fetching users:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+
+module.exports = { loginUser, fetchDefaultAddress, num21, num19 };
