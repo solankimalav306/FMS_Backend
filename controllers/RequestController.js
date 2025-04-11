@@ -188,7 +188,62 @@ const newUserRequest = async (req, res) => {
     }
   };
   
+  const fetchBuildingDateRequests = async (req, res) => {
+    const { building, date } = req.body;
+
+    try {
+        if (!building && !date) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        if (building && date) {
+            const startOfDay = `${date}T00:00:00`;
+            const endOfDay = `${date}T23:59:59.999`;
+
+            const { data, error } = await supabase
+                .from("requests")
+                .select("*")
+                .eq("building", building)
+                .gte("request_time", startOfDay)
+                .lte("request_time", endOfDay);
+
+            if (error) throw error;
+
+            return res.json({ requests: data });
+        }
+
+        if (building) {
+            const { data, error } = await supabase
+                .from("requests")
+                .select("*")
+                .eq("building", building);
+
+            if (error) throw error;
+
+            return res.json({ requests: data });
+        }
+
+        if (date) {
+            const startOfDay = `${date}T00:00:00`;
+            const endOfDay = `${date}T23:59:59.999`;
+
+            const { data, error } = await supabase
+                .from("requests")
+                .select("*")
+                .gte("request_time", startOfDay)
+                .lte("request_time", endOfDay);
+
+            if (error) throw error;
+
+            return res.json({ requests: data });
+        }
+
+    } catch (err) {
+        console.error("Error fetching requests:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
   
 
 
-module.exports = { fetchPreviousBookings, fetchOntimeBookings, fetchActiveRequests, updatefeedback, newUserRequest };
+module.exports = { fetchPreviousBookings, fetchOntimeBookings, fetchActiveRequests, updatefeedback, newUserRequest, fetchBuildingDateRequests };
