@@ -11,6 +11,7 @@ const RequestRoutes = require("./routes/RequestRoutes");
 const WorkerRoutes = require("./routes/WorkerRoutes");
 const FmsAdminRoutes = require("./routes/FmsAdminRoutes");
 const ComplaintRoutes = require("./routes/ComplaintRoutes");
+const StatisticsRoutes = require("./routes/StatisticsRouter");
 
 // --- Initialize Express App ---
 const app = express(); // Initialize app HERE
@@ -74,6 +75,7 @@ app.use("/request", RequestRoutes);
 app.use("/worker", WorkerRoutes);
 app.use("/admin", FmsAdminRoutes); // Ensure PUT '/update-user-location' is defined within this router
 app.use("/complaint", ComplaintRoutes);
+app.use("/statistics", StatisticsRoutes);
 
 // --- Basic Error Handling (Optional but Recommended) ---
 app.use((err, req, res, next) => {

@@ -647,6 +647,47 @@ const fetchActiveRequests = async (req, res) => {
     }
 };
 
+const fetchCompletedRequests = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('requests')
+            .select(`
+                worker_id,
+                user_id,
+                service_id,
+                room_no,
+                building,
+                request_time,
+                feedback,
+                services:service_id(service_type)
+            `)
+            .eq('is_completed', true)
+            .order('request_time', { ascending: false });
+
+        if (error) {
+            return res.status(500).json({ error: "Error fetching completed requests", details: error.message });
+        }
+
+        // Format the data to merge location and extract service_type
+        const formatted = data.map(req => ({
+            worker_id: req.worker_id,
+            user_id: req.user_id,
+            service_type: req.services?.service_type || "Unknown",
+            location: `${req.room_no}, ${req.building}`,
+            request_time: req.request_time,
+            feedback: req.feedback || "N/A"
+        }));
+
+        res.status(200).json({ requests: formatted });
+
+    } catch (err) {
+        console.error("Internal server error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
-module.exports = { fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
+
+
+
+module.exports = { fetchCompletedRequests,fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
