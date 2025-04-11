@@ -63,10 +63,11 @@ const fetchDefaultAddress = async (req, res) => {
 
 const num21 = async (req, res) => {
     try {
-        const { data: user, error } = await supabase.rpc('get_users_not_in_requests');
+        const { data: user, error } = await supabase
+            .rpc('get_users_in_files_not_requests');
 
         if (error || !user) {
-            return res.status(401).json({ error: "Error fetching users" });
+            return res.status(401).json({ error: "Error fetching users", details: error });
         }
 
         res.json({ user });
@@ -75,6 +76,7 @@ const num21 = async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 const num19 = async (req, res) => {
     try {
