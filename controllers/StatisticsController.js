@@ -13,7 +13,7 @@ const getAverageRequestsPerService = async (req, res) => {
   
       // Step 2: Create a Map of service_id → date → unique user count
       const countMap = new Map();
-  
+//   lol
       requests.forEach(({ service_id, user_id, request_time }) => {
         const date = new Date(request_time).toISOString().split('T')[0]; // YYYY-MM-DD
         const key = `${service_id}-${date}`;
