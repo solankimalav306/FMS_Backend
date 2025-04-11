@@ -94,5 +94,61 @@ const markorderrecived = async (req, res) => {
     }
 };
 
+const fetchLocationWorkerOrders = async (req, res) => {
+    const { worker_id, location } = req.body;
 
-module.exports = { getPendingOrders, fetchOrderHistory, fetchOrders, markorderrecived };
+    try {
+        if (!worker_id && !location) {
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        // Case 1: Both worker_id and location provided — fetch intersection
+        if (worker_id && location) {
+            const { data, error } = await supabase
+                .from("orders")
+                .select("*")
+                .eq("worker_id", worker_id)
+                .eq("location", location)
+                .eq("collected", true);
+
+            if (error) throw error;
+
+            return res.json({ orders: data });
+        }
+
+        // Case 2: Only worker_id provided
+        if (worker_id) {
+            const { data, error } = await supabase
+                .from("orders")
+                .select("*")
+                .eq("worker_id", worker_id)
+                .eq("collected", true);
+
+            if (error) throw error;
+
+            return res.json({ orders: data });
+        }
+
+        // Case 3: Only location provided
+        if (location) {
+            const { data, error } = await supabase
+                .from("orders")
+                .select("*")
+                .eq("location", location)
+                .eq("collected", true);
+
+            if (error) throw error;
+
+            return res.json({ orders: data });
+        }
+
+    } catch (err) {
+        console.error("Error fetching orders:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+
+
+module.exports = { getPendingOrders, fetchOrderHistory, fetchOrders, markorderrecived, fetchLocationWorkerOrders };
