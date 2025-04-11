@@ -5,6 +5,6 @@ const { getPendingOrders, fetchOrderHistory, fetchOrders,markorderrecived, fetch
 router.post("/pending-orders", getPendingOrders);
 router.get("/order-history", fetchOrderHistory);
 router.get("/all-orders", fetchOrders);
-router.get("/location-worker-orders", fetchLocationWorkerOrders);
+router.post("/location-worker-orders", fetchLocationWorkerOrders);
 router.patch("/markrecieved", markorderrecived);
 module.exports = router;
