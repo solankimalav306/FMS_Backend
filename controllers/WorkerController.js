@@ -388,7 +388,30 @@ const fetchAvgServices = async (req, res) => {
     }
 };
 
+const fetchHighestCompleted = async (req, res) => {
+    const { service_type } = req.body;
+
+    try {
+        if (!service_type) {
+            return res.status(400).json({ error: "service type is required" });
+        }
+
+        const { data, error } = await supabase.rpc('get_highest_completed_worker', {
+            service_type_input: service_type
+        });
+
+        if (error) {
+            console.error("Supabase error:", error);
+            return res.status(500).json({ error: "Error fetching workers" });
+        }
+
+        res.json({ data });
+    } catch (err) {
+        console.error("Error fetching workers:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
 
-module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers,addWorkerAssignment, fetchCompletedRequests, fetchLocationGuards, fetchAvgServices };
+module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers,addWorkerAssignment, fetchCompletedRequests, fetchLocationGuards, fetchAvgServices, fetchHighestCompleted };
