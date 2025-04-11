@@ -189,23 +189,77 @@ const newUserRequest = async (req, res) => {
   };
   
   const fetchBuildingDateRequests = async (req, res) => {
-    const { building, date } = req.body;
+    const { building, startTime, endTime } = req.body;
 
     try {
-        if (!building && !date) {
+        if (!building && !startTime && !endTime) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        if (building && date) {
-            const startOfDay = `${date}T00:00:00`;
-            const endOfDay = `${date}T23:59:59.999`;
-
+        if (building && startTime && endTime) {
             const { data, error } = await supabase
                 .from("requests")
                 .select("*")
                 .eq("building", building)
-                .gte("request_time", startOfDay)
-                .lte("request_time", endOfDay);
+                .gte("request_time", startTime)
+                .lte("request_time", endTime);
+
+            if (error) throw error;
+
+            return res.json({ requests: data });
+        }
+
+
+        if (startTime && endTime) {
+            const { data, error } = await supabase
+                .from("requests")
+                .select("*")
+                .gte("request_time", startTime)
+                .lte("request_time", endTime);
+
+            if (error) throw error;
+
+            return res.json({ requests: data });
+        }
+
+        if(startTime && building) {
+            const { data, error } = await supabase
+                .from("requests")
+                .select("*")
+                .eq("building", building)
+                .gte("request_time", startTime);
+
+            if (error) throw error;
+
+            return res.json({ requests: data });
+        }
+
+        if(endTime && building) {
+            const { data, error } = await supabase
+                .from("requests")
+                .select("*")
+                .eq("building", building)
+                .lte("request_time", endTime);
+
+            if (error) throw error;
+
+            return res.json({ requests: data });
+        }
+        if (startTime) {
+            const { data, error } = await supabase
+                .from("requests")
+                .select("*")
+                .gte("request_time", startTime);
+
+            if (error) throw error;
+
+            return res.json({ requests: data });
+        }
+        if (endTime) {
+            const { data, error } = await supabase
+                .from("requests")
+                .select("*")
+                .lte("request_time", endTime);
 
             if (error) throw error;
 
@@ -217,21 +271,6 @@ const newUserRequest = async (req, res) => {
                 .from("requests")
                 .select("*")
                 .eq("building", building);
-
-            if (error) throw error;
-
-            return res.json({ requests: data });
-        }
-
-        if (date) {
-            const startOfDay = `${date}T00:00:00`;
-            const endOfDay = `${date}T23:59:59.999`;
-
-            const { data, error } = await supabase
-                .from("requests")
-                .select("*")
-                .gte("request_time", startOfDay)
-                .lte("request_time", endOfDay);
 
             if (error) throw error;
 
