@@ -94,5 +94,34 @@ const markorderrecived = async (req, res) => {
     }
 };
 
+const fetchLocationWorkerOrders = async (req, res) => {
+    const { worker_id, location } = req.body;
 
-module.exports = { getPendingOrders, fetchOrderHistory, fetchOrders, markorderrecived };
+    try {
+
+        if(!worker_id && !location){
+            return res.status(400).json({ error: "Missing required fields" });
+        }
+
+        const { data: WorkerOrders, error } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("worker_id", worker_id)
+            .eq("collected", true);
+
+        const { data: locationOrders, error: workerError } = await supabase
+            .from("orders")
+            .select("*")
+            .eq("location", location)
+            .eq("collected", true);            
+
+
+        res.json({ locationOrders, WorkerOrders });
+    } catch (err) {
+        console.error("Error fetching orders:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+module.exports = { getPendingOrders, fetchOrderHistory, fetchOrders, markorderrecived, fetchLocationWorkerOrders };
