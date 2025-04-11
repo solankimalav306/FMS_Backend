@@ -476,18 +476,18 @@ const updateUserData = async (req, res) => {
 
 
 const updateWorkerData = async (req, res) => {
-    
+
 
     try {
-        const { worker_id, name, phone_no, assigned_role, date_of_joining,rating,password } = req.body;
+        const { worker_id, name, phone_no, assigned_role, date_of_joining, rating, password } = req.body;
 
-        if (!worker_id || !name || !assigned_service || !date_of_joining) {
+        if (!worker_id || !name || !assigned_role || !date_of_joining) {
             return res.status(400).json({ error: "worker_id, name, assigned_service and date of joining are required" });
         }
 
         const { data, error } = await supabase
             .from("worker")
-            .update({ name, phone_no, assigned_role, date_of_joining,rating,password })
+            .update({ name, phone_no, assigned_role, date_of_joining, rating, password })
             .eq("worker_id", worker_id)
             .select();
 
