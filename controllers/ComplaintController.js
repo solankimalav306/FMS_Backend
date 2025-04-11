@@ -100,6 +100,33 @@ const fetchUserComplaints = async (req, res) => {
     }
 };
 
+const fetchLastDayComplaints = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from("files")
+            .select(`
+                complaint_id,
+                is_resolved,
+                complaints (
+                    complaint,
+                    complaint_datetime
+                )
+            `)
+            .eq("is_resolved", false)
+            .lt("complaints.complaint_datetime", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+        if (error) {
+            console.error("Supabase error:", error);
+            return res.status(500).json({ error: "Error fetching complaints" });
+        }
+
+        res.json({ complaints: data });
+    } catch (err) {
+        console.error("Error fetching complaints:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
-module.exports = { fetchActiveComplaints, fetchDateComplaints, fetchUserComplaints };
+
+module.exports = { fetchActiveComplaints, fetchDateComplaints, fetchUserComplaints, fetchLastDayComplaints };
