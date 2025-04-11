@@ -200,7 +200,7 @@ const fetchBuildingDateRequests = async (req, res) => {
         user_id, 
         worker_id, 
         service_id, 
-        location,         
+               
         building,         
         
         request_time, 
