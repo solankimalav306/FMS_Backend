@@ -55,11 +55,8 @@ const fetchUsers = async (req, res) => {
 };
 
 const fetchEmployees = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
+
 
     try {
         const { data: employees, error } = await supabase
