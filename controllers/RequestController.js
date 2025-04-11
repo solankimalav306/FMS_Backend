@@ -251,7 +251,7 @@ const fetchBuildingDateRequests = async (req, res) => {
 
 
         // Send the processed data
-        return res.json({ requests: processedData }); // Send the processed data array
+        return res.json({ requests: formatted }); // Send the processed data array
 
     } catch (err) {
         console.error("Error fetching building/date requests:", err);
