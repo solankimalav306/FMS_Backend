@@ -568,14 +568,10 @@ const resolveComplaint = async (req, res) => {
 };
 
 const completeRequest = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
 
     try {
-        const { request_id } = req.body;
+        const { user_id, worker_id, request_time, iscompleted } = req.body;
 
         if (!request_id) {
             return res.status(400).json({ error: "request_id is required" });
@@ -583,8 +579,10 @@ const completeRequest = async (req, res) => {
 
         const { data, error } = await supabase
             .from("requests")
-            .update({ is_completed: true })
-            .eq("request_id", request_id)
+            .update({ worker_id, iscompleted })
+            .eq("user_id", user_id)
+            .eq("worker_id", worker_id)
+            .eq("requesr_time", request_time)
             .select();
 
         if (error) {
