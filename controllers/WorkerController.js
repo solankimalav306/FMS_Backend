@@ -326,5 +326,69 @@ const fetchLocationGuards = async (req, res) => {
     }
 };
 
+const fetchAvgServices = async (req, res) => {
+    try {
+        // Step 1: Get assigns data with service_id, assigned_time, worker_id
+        const { data: assigns, error } = await supabase
+            .from('assigns')
+            .select('worker_id, service_id, assigned_time');
 
-module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers,addWorkerAssignment, fetchCompletedRequests, fetchLocationGuards };
+        if (error) {
+            console.error("Supabase error:", error);
+            return res.status(500).json({ error: "Error fetching assigns" });
+        }
+
+        // Step 2: Transform assigns -> group by worker_id and assigned_date
+        const dailyCounts = {};
+
+        assigns.forEach(row => {
+            const date = new Date(row.assigned_time).toISOString().split('T')[0]; // 'YYYY-MM-DD'
+            const key = `${row.worker_id}-${date}`;
+
+            if (!dailyCounts[key]) {
+                dailyCounts[key] = { worker_id: row.worker_id, date, count: 0 };
+            }
+            dailyCounts[key].count += 1;
+        });
+
+        // Step 3: Group counts by worker_id and compute average
+        const workerServices = {};
+
+        Object.values(dailyCounts).forEach(entry => {
+            const { worker_id, count } = entry;
+            if (!workerServices[worker_id]) {
+                workerServices[worker_id] = [];
+            }
+            workerServices[worker_id].push(count);
+        });
+
+        const averages = [];
+
+        for (const worker_id in workerServices) {
+            const counts = workerServices[worker_id];
+            const avg = counts.reduce((a, b) => a + b, 0) / counts.length;
+
+            // Step 4: Fetch worker name
+            const { data: workerData, error: workerErr } = await supabase
+                .from('worker')
+                .select('name')
+                .eq('worker_id', worker_id)
+                .single();
+
+            const name = workerData?.name || 'Unknown';
+
+            averages.push({ worker_id, name, avg_services: avg });
+        }
+
+        res.json({ data: averages });
+
+    } catch (err) {
+        console.error("Error fetching average:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+
+
+module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers,addWorkerAssignment, fetchCompletedRequests, fetchLocationGuards, fetchAvgServices };
