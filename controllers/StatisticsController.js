@@ -64,6 +64,38 @@ const getAverageRequestsPerService = async (req, res) => {
     }
   };
   
+  const getTopRatedWorkersByRole = async (req, res) => {
+    try {
+        // Step 1: Get all workers with their ratings
+        const { data: workers, error } = await supabase
+            .from('worker')
+            .select('worker_id, name, assigned_role, rating');
+
+        if (error) {
+            return res.status(500).json({ error: 'Failed to fetch workers', details: error.message });
+        }
+
+        // Step 2: Process in JS — Group by role and pick max rated
+        const roleMap = {};
+
+        for (const worker of workers) {
+            const role = worker.assigned_role;
+            if (!roleMap[role] || worker.rating > roleMap[role].rating) {
+                roleMap[role] = worker;
+            }
+        }
+
+        // Convert result to array
+        const topWorkers = Object.values(roleMap);
+
+        res.status(200).json({ workers: topWorkers });
+
+    } catch (err) {
+        console.error('Unexpected error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 
 
-module.exports = { getAverageRequestsPerService}
+
+module.exports = { getAverageRequestsPerService, getTopRatedWorkersByRole}

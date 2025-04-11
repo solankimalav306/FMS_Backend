@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { getAverageRequestsPerService } = require("../controllers/StatisticsController");
+const { getAverageRequestsPerService,getTopRatedWorkersByRole } = require("../controllers/StatisticsController");
 
 router.get("/avg-requests-per-service", getAverageRequestsPerService);
+router.get("/top-rated-workers", getTopRatedWorkersByRole);
 
 module.exports = router;
