@@ -333,11 +333,7 @@ const addAdmin = async (req, res) => {
 };
 
 const removeWorker = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
 
     try {
         const { worker_id } = req.body;
@@ -690,4 +686,4 @@ const fetchCompletedRequests = async (req, res) => {
 
 
 
-module.exports = { fetchCompletedRequests,fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
+module.exports = { fetchCompletedRequests, fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
