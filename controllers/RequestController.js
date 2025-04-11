@@ -199,8 +199,9 @@ const fetchBuildingDateRequests = async (req, res) => {
         user_id, 
         worker_id, 
         service_id,          
-        building,         
+        location,         
         request_time, 
+        feedback,
         services ( service_type ) 
     `;
     // ^^ If service_type is in a related 'services' table, adjust the select like this.
