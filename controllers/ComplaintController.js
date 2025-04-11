@@ -14,7 +14,6 @@ const fetchActiveComplaints = async (req, res) => {
                     complaint_datetime
                 )
             `)
-            .eq("is_resolved", false)
             .order("complaint_id", { ascending: false });
 
         if (limit) query = query.limit(limit);
@@ -41,7 +40,7 @@ const fetchActiveComplaints = async (req, res) => {
 };
 
 const fetchDateComplaints = async (req, res) => {
-    const { date } = req.body; 
+    const { date } = req.body;
 
     try {
         if (!date) {
@@ -69,7 +68,7 @@ const fetchDateComplaints = async (req, res) => {
 };
 
 const fetchUserComplaints = async (req, res) => {
-    const { user_id } = req.body; 
+    const { user_id } = req.body;
 
     try {
         if (!user_id) {
