@@ -567,40 +567,87 @@ const resolveComplaint = async (req, res) => {
     }
 };
 
-const completeRequest = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
+// In your backend controller file
 
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
+const completeRequest = async (req, res) => {
+    // --- Debug: Log route entry and received body ---
+    console.log('--- PUT /admin/complete-request ---');
+    console.log('Received request body:', JSON.stringify(req.body, null, 2));
 
     try {
-        const { request_id } = req.body;
+        // --- Extract data from body ---
+        // Ensure keys match the payload sent from frontend
+        const { user_id, worker_id, request_time, iscompleted } = req.body;
 
-        if (!request_id) {
-            return res.status(400).json({ error: "request_id is required" });
+        // --- Basic Validation ---
+        if (!user_id || request_time === undefined) { // worker_id might be null, iscompleted can be false
+            console.error('Validation Error: user_id and request_time are required.');
+            return res.status(400).json({ error: "user_id and request_time are required to identify the request" });
+        }
+        // Ensure worker_id is provided if marking as completed
+        if (iscompleted === true && !worker_id) {
+            console.error('Validation Error: worker_id is required when completing a request.');
+            return res.status(400).json({ error: "worker_id must be assigned to complete the request" });
         }
 
+
+        // --- Prepare update object ---
+        // Include fields that are allowed to be updated by this endpoint
+        const updateObject = {};
+        if (worker_id !== undefined) { // Allow updating worker_id (even setting to null if needed)
+            updateObject.worker_id = worker_id;
+        }
+        if (iscompleted !== undefined) { // Allow updating completion status
+            updateObject.is_completed = iscompleted; // *** ENSURE 'is_completed' is your DB column name ***
+        }
+
+        // Check if there's anything to update
+        if (Object.keys(updateObject).length === 0) {
+            console.warn("No fields provided to update.");
+            return res.status(400).json({ error: "No update data provided" });
+        }
+
+        // --- Database Interaction ---
+        // ** FIX: Filter ONLY by unique identifiers (user_id and request_time) **
+        // **       Do NOT filter by worker_id here if you are trying to UPDATE it! **
+        console.log(`Attempting Supabase update for user_id: ${user_id}, request_time: ${request_time}`);
         const { data, error } = await supabase
-            .from("requests")
-            .update({ is_completed: true })
-            .eq("request_id", request_id)
-            .select();
+            .from("requests") // Ensure table name is correct
+            .update(updateObject) // Apply the updates
+            .eq("user_id", user_id) // Find row by user_id
+            .eq("request_time", request_time) // Find row by original request_time
+            // REMOVED: .eq("worker_id", worker_id)
+            .select(); // select() returns the updated rows
 
+        // --- Debug: Log Supabase Response ---
+        console.log('Supabase update response:', { data: JSON.stringify(data, null, 2), error: error });
+
+        // --- Handle Supabase Errors ---
         if (error) {
-            return res.status(401).json({ error: "Error updating request status" });
+            console.error('Supabase Error during update:', error);
+            // --- FIX: Use 500 for database errors ---
+            return res.status(500).json({ error: "Database error updating request status", details: error.message });
         }
 
-        if (data.length === 0) {
-            return res.status(404).json({ error: "Request not found" });
+        // --- Handle Request Not Found ---
+        if (!data || data.length === 0) {
+            console.warn(`Request not found for user_id: ${user_id}, request_time: ${request_time}`);
+            return res.status(404).json({ error: "Request not found with the provided identifiers" });
         }
 
-        res.json({ message: "Request marked as completed successfully", request: data });
+        // --- Success ---
+        console.log(`Successfully updated request for user ${user_id} at ${request_time}.`);
+        res.json({ message: "Request updated successfully", request: data[0] }); // Return updated request
+
     } catch (err) {
-        console.error("Update error:", err);
+        // --- Catch unexpected errors ---
+        console.error("Unexpected error in completeRequest handler:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
+// --- Make sure completeRequest is exported ---
+// module.exports = { ..., completeRequest, ... };
 
 const fetchActiveRequests = async (req, res) => {
     try {
