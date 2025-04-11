@@ -167,56 +167,43 @@ const getLatestAssignedWorkers = async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit) : null;
 
     try {
-        // Step 1: Get latest assigned_time per worker
-        const { data: latestAssigns, error: assignsError } = await supabase
-            .from('assigns')
-            .select('worker_id, assigned_time')
-            .order('assigned_time', { ascending: false });
+        // Step 1: Fetch all workers ordered by worker_id
+        const { data: workers, error: workerError } = await supabase
+            .from("worker")
+            .select("worker_id, name")
+            .order("worker_id", { ascending: true });
 
-        if (assignsError) {
-            return res.status(500).json({ error: "Error fetching assigns", details: assignsError.message });
+        if (workerError) {
+            return res.status(500).json({ error: "Error fetching workers", details: workerError.message });
         }
 
-        // Get latest assigned_time per worker
-        const latestMap = {};
-        for (const row of latestAssigns) {
-            if (!latestMap[row.worker_id]) {
-                latestMap[row.worker_id] = row.assigned_time;
-            }
-        }
+        // Step 2: For each worker, get their latest assigned_location
+        const workerResults = await Promise.all(workers.map(async (worker) => {
+            const { data: latestAssign, error: assignError } = await supabase
+                .from("assigns")
+                .select("assigned_location")
+                .eq("worker_id", worker.worker_id)
+                .order("assigned_time", { ascending: false })
+                .limit(1)
+                .maybeSingle(); // gracefully handles null
 
-        const assignments = Object.entries(latestMap)
-            .map(([worker_id, assigned_time]) => ({
-                worker_id: parseInt(worker_id),
-                assigned_time
-            }));
-
-        const slicedAssignments = limit ? assignments.slice(0, limit) : assignments;
-
-        const queries = await Promise.all(slicedAssignments.map(async ({ worker_id, assigned_time }) => {
-            const { data, error } = await supabase
-                .from('assigns')
-                .select('assigned_location, assigned_time, worker:worker_id(name)')
-                .eq('worker_id', worker_id)
-                .eq('assigned_time', assigned_time)
-                .single();
-
-            if (!error && data) {
-                return {
-                    worker_id,
-                    name: data.worker.name,
-                    assigned_location: data.assigned_location
-                };
-            }
+            return {
+                worker_id: worker.worker_id,
+                name: worker.name,
+                assigned_location: latestAssign?.assigned_location || null
+            };
         }));
 
-        res.status(200).json({ workers: queries.filter(Boolean) });
+        // Step 3: Apply optional limit and respond
+        const sliced = limit ? workerResults.slice(0, limit) : workerResults;
+        res.status(200).json({ workers: sliced });
 
     } catch (err) {
         console.error("Internal server error:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 
 
