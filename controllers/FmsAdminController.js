@@ -533,11 +533,7 @@ const updateOrderStatus = async (req, res) => {
 };
 
 const resolveComplaint = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
 
     try {
         const { complaint_id } = req.body;
