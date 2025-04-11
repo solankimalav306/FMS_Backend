@@ -75,17 +75,13 @@ const fetchEmployees = async (req, res) => {
 };
 
 const fetchActiveComplaints = async (req, res) => {
-    console.log("🔎 Checking session AdminID:", req.session.AdminID);
 
-    if (!req.session.AdminID) {
-        return res.status(401).json({ error: "Unauthorized. Please log in." });
-    }
 
     try {
         const { data: complaints, error } = await supabase
             .from("files")
             .select("*")
-            .eq("is_resolved", false);
+            ;
 
         if (error) {
             return res.status(500).json({ error: "Error fetching complaints" });
