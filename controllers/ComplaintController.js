@@ -113,7 +113,8 @@ const fetchLastDayComplaints = async (req, res) => {
                 )
             `)
             .eq("is_resolved", false)
-            .lt("complaints.complaint_datetime", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+            .lt("complaints.complaint_datetime", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+            .limit(5);
 
         if (error) {
             console.error("Supabase error:", error);
