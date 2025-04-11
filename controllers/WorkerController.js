@@ -266,4 +266,65 @@ const addWorkerAssignment = async (req, res) => {
     }
 };
 
-module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers,addWorkerAssignment};
+const fetchCompletedRequests = async (req, res) => {
+    const { worker_id } = req.body;
+
+    try {
+        if (!worker_id) {
+            return res.status(400).json({ error: "worker_id is required" });
+        }
+
+        const { data, error } = await supabase
+            .from('requests')
+            .select(`
+                building,
+                room_no,
+                request_time,
+                feedback,
+                services (
+                    service_type
+                )
+            `)
+            .eq('worker_id', worker_id)
+            .eq('is_completed', true);
+
+        if (error) {
+            console.error("Supabase error:", error);
+            return res.status(500).json({ error: "Error fetching completed requests" });
+        }
+
+        res.json({ requests: data });
+    } catch (err) {
+        console.error("Error fetching completed requests:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+const fetchLocationGuards = async (req, res) => {
+    const { location } = req.body;
+
+    try {
+        if (!location) {
+            return res.status(400).json({ error: "location is required" });
+        }
+
+        const { data, error } = await supabase
+            .from('orders')
+            .select('worker_id, worker(name)')
+            .eq('collected', true)
+            .eq('location', location);
+
+        if (error) {
+            console.error("Supabase error:", error);
+            return res.status(500).json({ error: "Error fetching workers" });
+        }
+
+        res.json({ data });
+    } catch (err) {
+        console.error("Error fetching workers:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+
+module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers,addWorkerAssignment, fetchCompletedRequests, fetchLocationGuards };
