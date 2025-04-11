@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted,createOrder,getLatestAssignedWorkers,addWorkerAssignment, fetchCompletedRequests, fetchLocationGuards, fetchAvgServices } = require("../controllers/WorkerController");
+const { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted,createOrder,getLatestAssignedWorkers,addWorkerAssignment, fetchCompletedRequests, fetchLocationGuards, fetchAvgServices, fetchHighestCompleted } = require("../controllers/WorkerController");
 
 router.post("/login", loginWorker);
 router.post("/work-queue", fetchWorkQueue);
@@ -12,5 +12,6 @@ router.post("/location-guards", fetchLocationGuards);
 router.get("/latest-area-of-service", getLatestAssignedWorkers);
 router.post("/new-assign",addWorkerAssignment);
 router.get("/avg-services", fetchAvgServices);
+router.post("/highest-completed", fetchHighestCompleted);
 
 module.exports = router;
