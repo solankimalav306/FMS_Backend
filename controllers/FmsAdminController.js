@@ -364,9 +364,7 @@ const removeWorker = async (req, res) => {
 };
 
 const removeUser = async (req, res) => {
-
-
-
+    //
     try {
         const { user_id } = req.body;
 
