@@ -204,10 +204,66 @@ const getLatestAssignedWorkers = async (req, res) => {
     }
 };
 
+const addWorkerAssignment = async (req, res) => {
+    const { worker_id, assigned_location } = req.body;
 
+    if (!worker_id || !assigned_location) {
+        return res.status(400).json({ error: "worker_id and assigned_location are required" });
+    }
 
+    try {
+        // Step 1: Get the worker's role
+        const { data: workerData, error: workerError } = await supabase
+            .from("worker")
+            .select("assigned_role")
+            .eq("worker_id", worker_id)
+            .single();
 
+        if (workerError || !workerData) {
+            return res.status(404).json({ error: "Worker not found" });
+        }
 
+        const role = workerData.assigned_role;
 
+        // Step 2: Determine service_id based on role
+        const roleToServiceId = {
+            "Guard": 1,
+            "Cleaner": 2,
+            "Painter": 3,
+            "Carpenter": 4,
+            "Electrician": 5,
+            "Miscellaneous": 6
+        };
 
-module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers};
+        const service_id = roleToServiceId[role];
+
+        if (!service_id) {
+            return res.status(400).json({ error: `No service_id mapping for role: ${role}` });
+        }
+
+        // Step 3: Insert into assigns table
+        const { error: insertError } = await supabase
+            .from("assigns")
+            .insert([
+                {
+                    service_id,
+                    admin_id: 1,
+                    worker_id,
+                    assigned_time: new Date().toISOString(),
+                    assigned_location
+                }
+            ]);
+
+        if (insertError) {
+            return res.status(500).json({ error: "Failed to insert assignment", details: insertError.message });
+        }
+
+        res.status(200).json({ message: "Worker assignment added successfully." });
+
+    } catch (err) {
+        console.error("Error adding worker assignment:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+module.exports = { loginWorker, fetchWorkQueue, fetchPreviousOrders ,markRequestCompleted, createOrder, getLatestAssignedWorkers,addWorkerAssignment};
