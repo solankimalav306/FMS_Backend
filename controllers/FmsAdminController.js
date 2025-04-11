@@ -647,6 +647,45 @@ const fetchActiveRequests = async (req, res) => {
     }
 };
 
+const fetchCompletedRequests = async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('requests')
+            .select(`
+                worker_id,
+                user_id,
+                room_no,
+                building,
+                request_time,
+                feedback,
+                services:service_id (service_type)
+            `)
+            .eq('is_completed', true)
+            .order('request_time', { ascending: false });
+
+        if (error) {
+            console.error("Supabase error:", error.message);
+            return res.status(500).json({ error: "Error fetching completed requests" });
+        }
+
+        const formatted = data.map(item => ({
+            worker_id: item.worker_id,
+            user_id: item.user_id,
+            service_type: item.service?.service_type || 'Unknown',
+            location: `${item.room_no}, ${item.building}`,
+            request_time: item.request_time,
+            feedback: item.feedback || 'No feedback'
+        }));
+
+        res.status(200).json({ completed_requests: formatted });
+
+    } catch (err) {
+        console.error("Server error:", err.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
-module.exports = { fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
+
+
+module.exports = { fetchCompletedRequests,fetchActiveRequests, loginAdmin, fetchUsers, fetchEmployees, fetchActiveComplaints, fetchRequestHistory, assignService, addService, addWorker, addUser, addAdmin, removeWorker, removeUser, removeService, updateUserData, updateWorkerData, updateOrderStatus, resolveComplaint, completeRequest };
