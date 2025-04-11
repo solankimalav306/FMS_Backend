@@ -31,7 +31,7 @@ const fetchPreviousBookings = async (req, res) => {
             is_completed: booking.is_completed,
             feedback: booking.feedback || "NULL",
             rating: booking.rating || "NULL",
-            time:booking.request_time
+            time: booking.request_time
         }));
 
         res.json({ bookings: formattedBookings });
@@ -124,165 +124,141 @@ const updatefeedback = async (req, res) => {
 const newUserRequest = async (req, res) => {
     const { user_id, service, location } = req.body;
     const request_time = new Date().toISOString().slice(0, 19); // "YYYY-MM-DDTHH:mm:ss"
-    
+
     if (!user_id || !service || !location) {
-      return res.status(400).json({ error: "Missing required fields" });
+        return res.status(400).json({ error: "Missing required fields" });
     }
     const [room_no, building] = location.split(",").map(s => s.trim());
-  
-    try {
-      // 1. Get service_id from service name
-      const { data: serviceData, error: serviceError } = await supabase
-        .from("services")
-        .select("service_id")
-        .eq("service_type", service)
-        .single();
-  
-      if (serviceError || !serviceData) {
-        return res.status(404).json({ error: "Service not found" });
-      }
-  
-      const service_id = serviceData.service_id;
-  
-      // 2. Get all workers assigned to the same building and service
-      const { data: assigns, error: assignError } = await supabase
-        .from("assigns")
-        .select("worker_id")
-        .eq("assigned_location", building)
-        .eq("service_id", service_id);
-  
-      if (assignError || !assigns || assigns.length === 0) {
-        return res.status(404).json({ error: "No workers assigned to this service/building" });
-      }
-  
-      // 3. Randomly pick one worker
-      const randomWorker = assigns[Math.floor(Math.random() * assigns.length)].worker_id;
-  
-      // 4. Insert into requests
-      const { data: insertData, error: insertError } = await supabase
-        .from("requests")
-        .insert([
-          {
-            user_id,
-            service_id,
-            room_no,
-            building,
-            request_time,
-            worker_id: randomWorker,
-            is_completed: false,
-            feedback: null,
-            rating: null
-          }
-        ])
-        .select();
-  
-      if (insertError) {
-        return res.status(500).json({ error: "Failed to insert request", details: insertError });
-      }
-  
-      res.status(201).json({ message: "Request created successfully", request: insertData[0] });
-  
-    } catch (err) {
-      console.error("Error creating request:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  };
-  
-  const fetchBuildingDateRequests = async (req, res) => {
-    const { building, startTime, endTime } = req.body;
 
     try {
-        if (!building && !startTime && !endTime) {
-            return res.status(400).json({ error: "Missing required fields" });
+        // 1. Get service_id from service name
+        const { data: serviceData, error: serviceError } = await supabase
+            .from("services")
+            .select("service_id")
+            .eq("service_type", service)
+            .single();
+
+        if (serviceError || !serviceData) {
+            return res.status(404).json({ error: "Service not found" });
         }
 
-        if (building && startTime && endTime) {
-            const { data, error } = await supabase
-                .from("requests")
-                .select("*")
-                .eq("building", building)
-                .gte("request_time", startTime)
-                .lte("request_time", endTime);
+        const service_id = serviceData.service_id;
 
-            if (error) throw error;
+        // 2. Get all workers assigned to the same building and service
+        const { data: assigns, error: assignError } = await supabase
+            .from("assigns")
+            .select("worker_id")
+            .eq("assigned_location", building)
+            .eq("service_id", service_id);
 
-            return res.json({ requests: data });
+        if (assignError || !assigns || assigns.length === 0) {
+            return res.status(404).json({ error: "No workers assigned to this service/building" });
         }
 
+        // 3. Randomly pick one worker
+        const randomWorker = assigns[Math.floor(Math.random() * assigns.length)].worker_id;
 
-        if (startTime && endTime) {
-            const { data, error } = await supabase
-                .from("requests")
-                .select("*")
-                .gte("request_time", startTime)
-                .lte("request_time", endTime);
+        // 4. Insert into requests
+        const { data: insertData, error: insertError } = await supabase
+            .from("requests")
+            .insert([
+                {
+                    user_id,
+                    service_id,
+                    room_no,
+                    building,
+                    request_time,
+                    worker_id: randomWorker,
+                    is_completed: false,
+                    feedback: null,
+                    rating: null
+                }
+            ])
+            .select();
 
-            if (error) throw error;
-
-            return res.json({ requests: data });
+        if (insertError) {
+            return res.status(500).json({ error: "Failed to insert request", details: insertError });
         }
 
-        if(startTime && building) {
-            const { data, error } = await supabase
-                .from("requests")
-                .select("*")
-                .eq("building", building)
-                .gte("request_time", startTime);
-
-            if (error) throw error;
-
-            return res.json({ requests: data });
-        }
-
-        if(endTime && building) {
-            const { data, error } = await supabase
-                .from("requests")
-                .select("*")
-                .eq("building", building)
-                .lte("request_time", endTime);
-
-            if (error) throw error;
-
-            return res.json({ requests: data });
-        }
-        if (startTime) {
-            const { data, error } = await supabase
-                .from("requests")
-                .select("*")
-                .gte("request_time", startTime);
-
-            if (error) throw error;
-
-            return res.json({ requests: data });
-        }
-        if (endTime) {
-            const { data, error } = await supabase
-                .from("requests")
-                .select("*")
-                .lte("request_time", endTime);
-
-            if (error) throw error;
-
-            return res.json({ requests: data });
-        }
-
-        if (building) {
-            const { data, error } = await supabase
-                .from("requests")
-                .select("*")
-                .eq("building", building);
-
-            if (error) throw error;
-
-            return res.json({ requests: data });
-        }
+        res.status(201).json({ message: "Request created successfully", request: insertData[0] });
 
     } catch (err) {
-        console.error("Error fetching requests:", err);
+        console.error("Error creating request:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
-  
+
+// In your backend controller file (e.g., RequestController.js)
+
+const fetchBuildingDateRequests = async (req, res) => {
+    const { building, startTime, endTime } = req.body; // Assuming these are correct
+
+    // Define the columns you want to select - INCLUDE location and service_type
+    // ** Adjust 'service_type' if the column name in your 'requests' table is different **
+    const columnsToSelect = `
+        user_id, 
+        worker_id, 
+        service_id,          
+        location,         
+        request_time, 
+        feedback,
+        services ( service_type ) 
+    `;
+    // ^^ If service_type is in a related 'services' table, adjust the select like this.
+    // If service_type is directly in the 'requests' table, just use 'service_type' instead of 'services(...)'
+
+    try {
+        // It's much cleaner to build the query dynamically
+        let query = supabase
+            .from("requests")
+            .select(columnsToSelect); // Select all needed columns
+
+        // Apply filters conditionally
+        if (building && building !== 'all') { // Check for 'all' if frontend might send it
+            query = query.eq("building", building);
+        }
+        if (startTime) {
+            query = query.gte("request_time", startTime);
+        }
+        if (endTime) {
+            query = query.lte("request_time", endTime);
+        }
+
+        // Add filter to only get completed requests if this endpoint should only return history
+        // query = query.eq("is_completed", true); // Or similar field
+
+        // Execute the single query
+        const { data, error } = await query;
+
+        if (error) {
+            console.error("Supabase error fetching filtered requests:", error);
+            throw error; // Let the catch block handle it
+        }
+
+        console.log(`Filtered requests found: ${data ? data.length : 0}`);
+        // --- Process data if needed (e.g., flatten related table data) ---
+        const processedData = data.map(item => ({
+            ...item,
+            // If service_type came from related table, flatten it
+            service_type: item.services?.service_type || item.service_type || 'N/A' // Handle both possibilities
+            // Remove the nested 'services' object if you don't need it frontend
+            // services: undefined
+        }));
+        // --- End processing ---
+
+
+        // Send the processed data
+        return res.json({ requests: processedData }); // Send the processed data array
+
+    } catch (err) {
+        console.error("Error fetching building/date requests:", err);
+        res.status(500).json({ error: "Internal server error", details: err.message });
+    }
+};
+
+// Ensure this function is exported and used by the correct POST route
+// module.exports = { ..., fetchBuildingDateRequests, ... };
+
 
 
 module.exports = { fetchPreviousBookings, fetchOntimeBookings, fetchActiveRequests, updatefeedback, newUserRequest, fetchBuildingDateRequests };
