@@ -96,6 +96,39 @@ const getAverageRequestsPerService = async (req, res) => {
     }
 };
 
+const getUserServiceRequestsByDate = async (req, res) => {
+    const { user_id, date } = req.query;
+
+    if (!user_id || !date) {
+        return res.status(400).json({ error: "Missing user_id or date in query parameters." });
+    }
+
+    try {
+        const startDate = `${date} 00:00:00`;
+        const endDate = new Date(date);
+        endDate.setDate(endDate.getDate() + 1);
+        const endDateString = endDate.toISOString().split('T')[0] + ' 00:00:00';
+
+        const { data, error } = await supabase
+            .from("requests")
+            .select("*")
+            .gte("request_time", startDate)
+            .lte("request_time", endDateString)
+            .ilike("user_id", `%${user_id}%`)
+            .order("request_time", { ascending: false });
+
+        if (error) {
+            return res.status(500).json({ error: "Database fetch error", details: error.message });
+        }
+
+        return res.status(200).json({ services: data });
+    } catch (err) {
+        console.error("Unexpected error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
 
 
-module.exports = { getAverageRequestsPerService, getTopRatedWorkersByRole}
+
+
+module.exports = { getAverageRequestsPerService, getTopRatedWorkersByRole, getUserServiceRequestsByDate}
