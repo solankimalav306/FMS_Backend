@@ -654,36 +654,38 @@ const fetchCompletedRequests = async (req, res) => {
             .select(`
                 worker_id,
                 user_id,
+                service_id,
                 room_no,
                 building,
                 request_time,
                 feedback,
-                services:service_id (service_type)
+                services:service_id(service_type)
             `)
             .eq('is_completed', true)
             .order('request_time', { ascending: false });
 
         if (error) {
-            console.error("Supabase error:", error.message);
-            return res.status(500).json({ error: "Error fetching completed requests" });
+            return res.status(500).json({ error: "Error fetching completed requests", details: error.message });
         }
 
-        const formatted = data.map(item => ({
-            worker_id: item.worker_id,
-            user_id: item.user_id,
-            service_type: item.service?.service_type || 'Unknown',
-            location: `${item.room_no}, ${item.building}`,
-            request_time: item.request_time,
-            feedback: item.feedback || 'No feedback'
+        // Format the data to merge location and extract service_type
+        const formatted = data.map(req => ({
+            worker_id: req.worker_id,
+            user_id: req.user_id,
+            service_type: req.services?.service_type || "Unknown",
+            location: `${req.room_no}, ${req.building}`,
+            request_time: req.request_time,
+            feedback: req.feedback || "N/A"
         }));
 
-        res.status(200).json({ completed_requests: formatted });
+        res.status(200).json({ requests: formatted });
 
     } catch (err) {
-        console.error("Server error:", err.message);
+        console.error("Internal server error:", err);
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 
 
 
