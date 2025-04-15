@@ -108,8 +108,7 @@ const fetchLocationWorkerOrders = async (req, res) => {
                 .from("orders")
                 .select("*")
                 .eq("worker_id", worker_id)
-                .eq("location", location)
-                .eq("collected", true);
+                .eq("location", location);
 
             if (error) throw error;
 
@@ -121,8 +120,7 @@ const fetchLocationWorkerOrders = async (req, res) => {
             const { data, error } = await supabase
                 .from("orders")
                 .select("*")
-                .eq("worker_id", worker_id)
-                .eq("collected", true);
+                .eq("worker_id", worker_id);
 
             if (error) throw error;
 
@@ -134,8 +132,7 @@ const fetchLocationWorkerOrders = async (req, res) => {
             const { data, error } = await supabase
                 .from("orders")
                 .select("*")
-                .eq("location", location)
-                .eq("collected", true);
+                .eq("location", location);
 
             if (error) throw error;
 
