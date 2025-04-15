@@ -127,6 +127,76 @@ const fetchLastDayComplaints = async (req, res) => {
     }
 };
 
+const addComplaint = async (req, res) => {
+    try {
+        const { user_id, complaint } = req.body;
 
+        if (!user_id || !complaint) {
+            return res.status(400).json({ error: "Missing user_id or complaint" });
+        }
 
-module.exports = { fetchActiveComplaints, fetchDateComplaints, fetchUserComplaints, fetchLastDayComplaints };
+        // Step 1: Get a random admin_id
+        const { data: admins, error: adminError } = await supabase
+            .from("fms_admin")
+            .select("admin_id");
+
+        if (adminError || !admins || admins.length === 0) {
+            return res.status(500).json({ error: "Failed to fetch admin" });
+        }
+
+        const randomIndex = Math.floor(Math.random() * admins.length);
+        const admin_id = admins[randomIndex].admin_id;
+
+        // Step 2: Get latest complaint_id and increment
+        const { data: latestComplaint, error: idError } = await supabase
+            .from("complaints")
+            .select("complaint_id")
+            .order("complaint_id", { ascending: false })
+            .limit(1);
+
+        if (idError) {
+            return res.status(500).json({ error: "Failed to fetch latest complaint_id" });
+        }
+
+        const newComplaintId = latestComplaint.length > 0 ? latestComplaint[0].complaint_id + 1 : 1;
+
+        // Step 3: Insert into complaints table (manual ID)
+        const { error: insertComplaintError } = await supabase
+            .from("complaints")
+            .insert([{
+                complaint_id: newComplaintId,
+                complaint,
+                complaint_datetime: new Date().toISOString()
+            }]);
+
+        if (insertComplaintError) {
+            return res.status(500).json({ error: "Failed to insert complaint" });
+        }
+
+        // Step 4: Insert into files table
+        const { error: fileError } = await supabase
+            .from("files")
+            .insert([{
+                complaint_id: newComplaintId,
+                user_id,
+                admin_id,
+                is_resolved: false
+            }]);
+
+        if (fileError) {
+            return res.status(500).json({ error: "Failed to insert into files table" });
+        }
+
+        res.status(201).json({
+            message: "Complaint added successfully",
+            complaint_id: newComplaintId,
+            admin_id
+        });
+
+    } catch (err) {
+        console.error("Error adding complaint:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
+module.exports = { fetchActiveComplaints, fetchDateComplaints, fetchUserComplaints, fetchLastDayComplaints, addComplaint };
